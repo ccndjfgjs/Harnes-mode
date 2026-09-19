@@ -47,5 +47,27 @@ export const en: Record<ScheduleCatalogKey, string> = {
   'relative.overdue': '{value} {unit} overdue',
 }
 
+/** Russian dictionary, key-identical to the Chinese source of truth. */
+export const ru: Record<ScheduleCatalogKey, string> = {
+  'trigger.one': '{count} напоминание',
+  'trigger.other': '{count} напоминаний',
+  'list.aria': 'Активные напоминания',
+  'status.scheduled': 'Запланировано',
+  'status.overdue': 'Просрочено',
+  'frequency.once': 'Один раз',
+  'frequency.every': 'Каждые {value} {unit}',
+  'unit.day.one': 'день',
+  'unit.day.other': 'дней',
+  'unit.hour.one': 'час',
+  'unit.hour.other': 'часов',
+  'unit.minute.one': 'минута',
+  'unit.minute.other': 'минут',
+  'unit.second.one': 'секунда',
+  'unit.second.other': 'секунд',
+  'relative.now': 'Срок сейчас',
+  'relative.future': 'через {value} {unit}',
+  'relative.overdue': '{value} {unit} назад (просрочено)',
+}
+
 /** Key domain of the Schedule catalog namespace. */
 export type ScheduleCatalogKey = keyof typeof zh

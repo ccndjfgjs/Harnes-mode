@@ -10,7 +10,14 @@ import type { ChatViewSlotProps } from './contract/slots.ts'
  */
 export function markdownLabels(t: ChatViewSlotProps['t']): MarkdownLabels {
   return {
-    code: { copyLabel: t('copy'), copiedLabel: t('copied') },
+    code: {
+      copyLabel: t('copy'),
+      copiedLabel: t('copied'),
+      speakLabel: t('markdown.code.speak'),
+      describeCode: (lang, lines) => lang === undefined
+        ? t('markdown.code.label', { lines })
+        : t('markdown.code.labelLang', { lang, lines }),
+    },
     footnotes: t('markdown.footnotes'),
   }
 }

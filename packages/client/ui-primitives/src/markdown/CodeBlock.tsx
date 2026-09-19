@@ -29,6 +29,18 @@ export interface CodeBlockProps {
   copyLabel: string
   /** Copy-button label during the post-copy confirmation window. */
   copiedLabel: string
+  /**
+   * Accessible region name (language + line count, composed by the owner).
+   * The wrapper is a plain div when absent so a region never lacks a name.
+   */
+  codeLabel?: string | undefined
+  /** Read-aloud button label; the button renders only together with onSpeak. */
+  speakLabel?: string | undefined
+  /**
+   * Read the fence aloud (lines without the trailing-newline trim artifact).
+   * Absent wherever no speech service is wired — then no button renders.
+   */
+  onSpeak?: ((lines: readonly string[]) => void) | undefined
 }
 
 /**
@@ -57,7 +69,7 @@ function renderLine(line: readonly HighlightSpan[], index: number): ReactNode {
   )
 }
 
-export function CodeBlock({ code, lang, streaming, className, copyLabel, copiedLabel }: CodeBlockProps) {
+export function CodeBlock({ code, lang, streaming, className, copyLabel, copiedLabel, codeLabel, speakLabel, onSpeak }: CodeBlockProps) {
   const trimmed = code.endsWith('\n') ? code.slice(0, -1) : code
   const rootRef = useRef<HTMLDivElement>(null)
   const highlighting = useViewportHighlighting(rootRef, lang)
@@ -166,12 +178,27 @@ export function CodeBlock({ code, lang, streaming, className, copyLabel, copiedL
         <div dangerouslySetInnerHTML={{ __html: html }} />
       )
 
+  const speakable = onSpeak !== undefined && speakLabel !== undefined
+  const onSpeakLines = (): void => {
+    onSpeak?.(trimmed.split('\n'))
+  }
+
   return (
-    <div ref={rootRef} className={clsx(css.block, 'md-code-block', className)}>
+    <div
+      ref={rootRef}
+      className={clsx(css.block, 'md-code-block', className)}
+      role={codeLabel === undefined ? undefined : 'region'}
+      aria-label={codeLabel}
+    >
       <div className={css.bannerWrap}>
         <div className={css.banner}>
           <div className={css.infostring}>{lang ?? ''}</div>
           <div className={css.action}>
+            {speakable && (
+              <button type="button" className={css.copyButton} onClick={onSpeakLines}>
+                {speakLabel}
+              </button>
+            )}
             <button type="button" className={css.copyButton} onClick={onCopy}>
               {copied ? copiedLabel : copyLabel}
             </button>

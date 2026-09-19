@@ -54,3 +54,25 @@ export const en = {
   'blocked.composer': 'This model is unavailable — select one to continue',
   'empty.efforts': 'This model provides no reasoning effort levels.',
 } satisfies Record<ModelKey, string>
+
+/** Russian dictionary, checked complete against the zh key set. */
+export const ru = {
+  'command.description': 'Выбрать модель для этого диалога',
+  'option.loadError': 'Не удалось загрузить список моделей: {message}',
+  'trigger.fallback': 'Выбрать модель',
+  'trigger.loading': 'Модели загружаются…',
+  'trigger.selectAria': 'Выбрать модель',
+  'trigger.aria': 'Выбрать модель, сейчас {model}',
+  'trigger.ariaEffort': 'Выбрать модель, сейчас {model}, уровень рассуждений {effort}',
+  'menu.aria': 'Модель и уровень рассуждений',
+  'menu.model': 'Модель',
+  'menu.effort': 'Рассуждения',
+  'effort.providerDefault': 'Как у поставщика',
+  'status.loading': 'Список моделей обновляется…',
+  'error.action': 'Не удалось выполнить действие с моделью: {message}',
+  'action.reload': 'Обновить',
+  'warning.groupLoad': 'Не удалось загрузить «{name}»: {message}',
+  'empty.models': 'Нет доступных моделей.',
+  'blocked.composer': 'Эта модель недоступна — выберите другую, чтобы продолжить',
+  'empty.efforts': 'Эта модель не поддерживает уровни рассуждений.',
+} satisfies Record<ModelKey, string>

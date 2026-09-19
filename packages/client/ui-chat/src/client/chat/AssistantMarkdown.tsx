@@ -2,6 +2,7 @@ import { Fragment, memo, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { JsonBlock, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
+import { speakCode } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ChatNodeOwnerProps, ChatViewSlotProps } from '../contract/slots.ts'
 import type { AssistantBlock } from '../contract/snapshot.ts'
 import { markdownLabels } from '../markdown-labels.ts'
@@ -24,6 +25,16 @@ export interface AssistantMarkdownProps {
   mentions?: MarkdownFileMentions | undefined
   /** The owning view's locale seat, passed down as a plain prop. */
   t: ChatViewSlotProps['t']
+}
+
+/**
+ * Read one fence aloud through the shared speech service. Module-stable so
+ * MarkdownText's frozen streaming cache never goes stale; the speech service
+ * resolves the Accessibility code-reading mode itself.
+ * @param lines - fence lines without the trailing-newline artifact.
+ */
+function speakFence(lines: readonly string[]): void {
+  speakCode(lines)
 }
 
 /** Reasoning block as the Think variant summary row (figma 39:28304). */
@@ -55,6 +66,7 @@ export const AssistantMarkdown = memo(function AssistantMarkdown({
             streaming={streaming}
             labels={labels}
             fileMentions={mentions}
+            onSpeakCode={speakFence}
           />,
         )
         break

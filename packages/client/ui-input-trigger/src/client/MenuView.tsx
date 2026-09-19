@@ -12,7 +12,7 @@
  */
 import { Fragment, useEffect, useRef, useSyncExternalStore } from 'react'
 import clsx from 'clsx'
-import { IconChevronRightOutline14, ReferenceIcon, useAnchoredMaxHeight } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronRightOutline14, ReferenceIcon, speakNavText, useAnchoredMaxHeight } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import css from './MenuView.module.css'
 import type { MenuViewInjected } from './slots.ts'
@@ -56,6 +56,14 @@ export function MenuView({ menu, headers, onPick, onCrumb, onHover, onDismiss, t
     document.getElementById(optionId(highlight.source, highlight.index))
       ?.scrollIntoView({ block: 'nearest' })
   }, [highlight])
+  // Voice navigation: announce the highlighted option as arrows move it
+  // (focus stays in the textarea, so focusin delegation never fires here).
+  const highlightLabel = highlight !== null
+    ? state.groups.find(group => group.source === highlight.source)?.items[highlight.index]?.name
+    : undefined
+  useEffect(() => {
+    if (highlightLabel !== undefined) speakNavText(highlightLabel)
+  }, [highlightLabel])
   // Dismiss on pointer outside the menu AND outside the composer card
   // (clicking the textarea or bottom bar must not close the menu).
   useEffect(() => {

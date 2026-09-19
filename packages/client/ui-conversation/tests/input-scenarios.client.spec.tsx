@@ -368,3 +368,40 @@ describe('scenario I: unknown /xyz + enter', () => {
     expect(b.sink).not.toHaveBeenCalled()
   })
 })
+
+describe('submit sounds', () => {
+  it('blips once when the draft is accepted', async () => {
+    const contexts: unknown[] = []
+    vi.stubGlobal('AudioContext', function CountingAudioContext(this: unknown) {
+      contexts.push(this)
+    })
+    try {
+      const b = await bench()
+      b.type('hello there')
+      fireEvent.keyDown(b.textarea, { key: 'Enter' })
+      await vi.waitFor(() => { expect(b.sink).toHaveBeenCalled() })
+      expect(contexts).toHaveLength(1)
+    } finally {
+      vi.unstubAllGlobals()
+      localStorage.clear()
+    }
+  })
+
+  it('stays silent when sound is disabled', async () => {
+    const contexts: unknown[] = []
+    vi.stubGlobal('AudioContext', function CountingAudioContext(this: unknown) {
+      contexts.push(this)
+    })
+    localStorage.setItem('dsh.accessibility.settings', JSON.stringify({ sound: false }))
+    try {
+      const b = await bench()
+      b.type('hello there')
+      fireEvent.keyDown(b.textarea, { key: 'Enter' })
+      await vi.waitFor(() => { expect(b.sink).toHaveBeenCalled() })
+      expect(contexts).toHaveLength(0)
+    } finally {
+      vi.unstubAllGlobals()
+      localStorage.clear()
+    }
+  })
+})

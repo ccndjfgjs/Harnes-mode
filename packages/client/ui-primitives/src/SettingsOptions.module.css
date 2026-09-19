@@ -1,0 +1,48 @@
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+}
+
+.option input {
+  accent-color: var(--dsw-alias-state-business-primary);
+}
+
+/* The save row closes the section, so it takes the same top breathing room
+   the section's own gap gives its cards and is not the last element pressed
+   against the panel's bottom padding. */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* The primary action reads as a button in every contrast theme: the fill
+   comes from the button-primary pair, whose text token flips with the theme.
+   A literal `#fff` here would be invisible on the yellow theme's yellow fill. */
+.save {
+  height: 32px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--dsw-alias-button-info-fill);
+  color: var(--dsw-alias-label-primary-inverted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.save:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.status {
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}

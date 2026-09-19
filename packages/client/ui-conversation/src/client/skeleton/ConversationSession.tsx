@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import clsx from 'clsx'
+import { speakNavElement } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionListState, SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {
@@ -143,7 +144,8 @@ export function ConversationSessionHeader({
                   role="tab"
                   aria-selected={viewTab.id === active?.id}
                   className={clsx(css.tab, viewTab.id === active?.id && css.tabActive)}
-                  onClick={() => { selectView(viewTab.id) }}
+                  onFocus={(event) => { try { speakNavElement(event.currentTarget) } catch {} }}
+                  onClick={(event) => { try { speakNavElement(event.currentTarget) } catch {} selectView(viewTab.id) }}
                 >
                   {viewTab.label}
                 </button>
@@ -164,7 +166,7 @@ export function ConversationSessionHeader({
  */
 export function ConversationSession({
   useSession, useConversation, useConversationViews, useInput, inputActions, useStore, actions,
-  renderSlot, bindDraftMirror, openView,
+  renderSlot, bindDraftMirror, openView, t,
 }: ConversationSessionProps) {
   const tabs = useConversationViews(value => value)
   const selectedId = useStore(s => s.view)
@@ -185,7 +187,7 @@ export function ConversationSession({
 
   if (session.blank && conversationPhase(session, conversation) === 'blank') return null
   return (
-    <div className={css.viewArea}>
+    <div className={css.viewArea} role="log" aria-label={t('session.chat')}>
       {active !== undefined && renderSlot('conversation.view', {
         viewRequest,
         openView,

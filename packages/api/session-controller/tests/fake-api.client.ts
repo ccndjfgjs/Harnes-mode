@@ -135,6 +135,7 @@ export class FakeApiClient {
       },
     }))
   onRename: (payload: unknown) => Promise<RemoteResult<{ title: string; seq: number }>> = () => Promise.resolve(ok({ title: 'fk-renamed', seq: 0 }))
+  onRestructureDraft: (payload: unknown) => Promise<RemoteResult<{ text: string }>> = () => Promise.resolve(ok({ text: 'fk-restructured' }))
   onFork: (payload: unknown) => Promise<RemoteResult<{ sessionId: SessionId }>> = () => Promise.resolve(ok({ sessionId: 'fk-fork' as SessionId }))
   onHistory: (payload: { sessionId: SessionId; throughSeq?: number; beforeSeq?: number; maxMessages?: number })
   => Promise<RemoteResult<SessionPage & { readonly projections?: SessionProjectionBaseline }>> =
@@ -222,6 +223,11 @@ export class FakeApiClient {
           this.onSelectModel(payload),
         ),
         rename: payload => this.record('session.rename', payload, this.onRename(payload)),
+        restructureDraft: payload => this.record(
+          'session.restructureDraft',
+          payload,
+          this.onRestructureDraft(payload),
+        ),
         fork: payload => this.record('session.fork', payload, this.onFork(payload)),
         prompt: payload => this.record('session.prompt', payload, this.onPrompt(payload)),
         attachment: payload => this.record('session.attachment', payload, this.onAttachment(payload)),

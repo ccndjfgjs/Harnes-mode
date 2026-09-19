@@ -47,5 +47,27 @@ export const en: Record<WorkflowRunKey, string> = {
   'status.interrupted': 'Interrupted',
 }
 
+/** Russian dictionary (same key set). */
+export const ru: Record<WorkflowRunKey, string> = {
+  'run.title': '{name}',
+  'run.members.one': '{count} участник',
+  'run.members.other': 'Участников: {count}',
+  'run.empty': 'Участники не запущены',
+  'phase.unassigned': 'Без этапа',
+  'phase.empty': 'Пустое имя этапа',
+  'statusCount.running': 'Выполняется: {count}',
+  'statusCount.completed': 'Завершено: {count}',
+  'statusCount.failed': 'С ошибками: {count}',
+  'statusCount.cancelled': 'Отменено: {count}',
+  'statusCount.interrupted': 'Прервано: {count}',
+  'member.empty': 'Пустое имя участника',
+  'member.open': 'Открыть {name}',
+  'status.running': 'Выполняется',
+  'status.completed': 'Завершено',
+  'status.failed': 'Ошибка',
+  'status.cancelled': 'Отменено',
+  'status.interrupted': 'Прервано',
+}
+
 /** Union of this namespace's dictionary keys. */
 export type WorkflowRunKey = keyof typeof zh

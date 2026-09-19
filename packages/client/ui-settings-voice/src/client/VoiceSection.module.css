@@ -1,0 +1,182 @@
+/* Voice Settings page: two connection cards (STT, TTS) in the section column. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+}
+
+.description {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-specific-input-major);
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+.hint {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.fieldInput {
+  height: 32px;
+  padding: 0 10px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-specific-selector);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  outline: none;
+}
+
+.fieldInput:focus {
+  border-color: var(--dsw-alias-state-business-primary);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.save {
+  height: 32px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--dsw-alias-button-info-fill);
+  color: var(--dsw-alias-label-primary-inverted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.save:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.status {
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.statusReady {
+  color: var(--dsw-alias-state-business-primary);
+}
+
+/* The devices card: live permission state plus the enumerated roster. */
+.deviceStatus {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.stateValue {
+  font-weight: 500;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.stateOk {
+  color: var(--dsw-alias-state-success-primary);
+}
+
+.stateDenied {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+/* Asks the OS for the microphone: a quiet bordered button, since the save
+   button below stays the page's one loud action. */
+.request {
+  margin-left: auto;
+  height: 28px;
+  padding: 0 12px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.request:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.request:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.deviceGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deviceList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* The provider card: a service picker, two voice pickers, and their actions. */
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Says out loud that the chosen answer voice will not carry the call, rather
+   than letting the call quietly answer in another voice. */
+.warn {
+  color: var(--dsw-alias-state-warn-label);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.range {
+  width: 100%;
+  height: 24px;
+  accent-color: var(--dsw-alias-state-business-primary);
+}

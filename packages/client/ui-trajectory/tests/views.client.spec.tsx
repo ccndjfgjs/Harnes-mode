@@ -213,7 +213,9 @@ function standaloneProps(
     addImages: () => false,
     removeImage: () => {},
     pruneImages: () => {},
+    restructureDraft: async (text: string) => text,
     submit: () => {},
+    awaitAnswer: async () => { throw new Error('unused') },
   }
   return {
     sessionId: SID,
@@ -268,6 +270,7 @@ async function bench(snapshot = historySnapshot(NODES)) {
     snapshot: conversationStore,
     activate: () => {},
     target: target => targetSources[target],
+    awaitAnswer: () => () => {},
   }
   vi.spyOn(uiConversation, 'binding').mockReturnValue(binding)
   // The conversation entry's role: declare the ring, then seed the chat entry.
@@ -335,7 +338,9 @@ function mount(fixture: Awaited<ReturnType<typeof bench>>) {
     addImages: vi.fn(() => false),
     removeImage: vi.fn(),
     pruneImages: vi.fn(),
+    restructureDraft: vi.fn(async (text: string) => text),
     submit: vi.fn(),
+    awaitAnswer: vi.fn(async () => { throw new Error('unused') }),
   }
   const standardProps = {
     sessionId: SID,
@@ -403,6 +408,7 @@ function mount(fixture: Awaited<ReturnType<typeof bench>>) {
         renderSlot={renderSlot}
         bindDraftMirror={() => () => {}}
         openView={conversation.actions.openView}
+        t={tConversation}
       />
     </>,
   )

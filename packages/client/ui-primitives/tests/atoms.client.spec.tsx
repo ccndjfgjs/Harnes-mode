@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Button, ConnectionIndicator, Input, Menu, Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, ConnectionIndicator, Input, Menu, Modal, Pill, SettingsRadioOption, SettingsSaveBar } from '@deepseek-ai/dsh-client-ui-primitives'
 import { POINTER_GRACE_MS } from '../src/pointer-grace.ts'
 
 afterEach(cleanup)
@@ -451,5 +451,47 @@ describe('ConnectionIndicator', () => {
     rerender(<ConnectionIndicator state="recovered" {...labels} />)
     expect(screen.queryByRole('button')).toBeNull()
     expect(screen.getByRole('status', { name: 'Connected' })).toBeTruthy()
+  })
+})
+
+describe('SettingsRadioOption', () => {
+  it('renders the label, reflects checked, and selects on click', () => {
+    const onSelect = vi.fn()
+    const { rerender } = render(
+      <SettingsRadioOption name="grp" value="a" label="Alpha" checked={false} onSelect={onSelect} />,
+    )
+    const option = screen.getByRole<HTMLInputElement>('radio', { name: 'Alpha' })
+    expect(option.checked).toBe(false)
+    fireEvent.click(option)
+    expect(onSelect).toHaveBeenCalledOnce()
+    rerender(
+      <SettingsRadioOption name="grp" value="a" label="Alpha" checked onSelect={onSelect} />,
+    )
+    expect(screen.getByRole<HTMLInputElement>('radio', { name: 'Alpha' }).checked).toBe(true)
+  })
+
+  it('renders an optional leading node inside the label', () => {
+    const { container } = render(
+      <SettingsRadioOption name="grp" value="a" label="Alpha" checked={false} onSelect={() => {}} leading={<span data-testid="dot" />} />,
+    )
+    const label = container.querySelector('label')!
+    expect(label.textContent).toContain('Alpha')
+    expect(label.querySelector('[data-testid="dot"]')).toBeTruthy()
+  })
+})
+
+describe('SettingsSaveBar', () => {
+  it('saves on click and shows the confirmation only when saved', () => {
+    const onSave = vi.fn()
+    const { rerender } = render(
+      <SettingsSaveBar saveLabel="Save" saved={false} savedLabel="Saved" onSave={onSave} />,
+    )
+    expect(screen.queryByRole('status')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(onSave).toHaveBeenCalledOnce()
+    rerender(
+      <SettingsSaveBar saveLabel="Save" saved savedLabel="Saved" onSave={onSave} />,
+    )
+    expect(screen.getByRole('status').textContent).toBe('Saved')
   })
 })

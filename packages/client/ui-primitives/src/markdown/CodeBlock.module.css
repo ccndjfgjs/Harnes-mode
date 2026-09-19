@@ -96,3 +96,12 @@
 .plain {
   color: var(--dsw-alias-label-primary);
 }
+
+/* The Customization "wrap code" toggle projects onto the document root (see
+   apply-customization.ts). The base rule above always wraps, so only the off
+   state needs an override: long lines scroll horizontally instead. Scoped to
+   the global code-block marker so other <pre> surfaces keep their own rules. */
+:global(:root[data-dsh-code-wrap='off'] .md-code-block pre) {
+  white-space: pre;
+  word-break: normal;
+}

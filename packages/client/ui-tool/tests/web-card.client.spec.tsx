@@ -246,7 +246,9 @@ describe('DetailsPanel web Output section', () => {
           addImages: () => true,
           removeImage: () => {},
           pruneImages: () => {},
+          restructureDraft: async (text: string) => text,
           submit: () => {},
+          awaitAnswer: async () => { throw new Error('unused') },
         }}
         useProjection={(() => undefined)}
         useStore={bindSnapshotSelector(chat)}

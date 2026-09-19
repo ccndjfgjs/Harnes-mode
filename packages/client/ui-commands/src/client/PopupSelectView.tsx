@@ -12,7 +12,7 @@
 import { useEffect, useRef } from 'react'
 import { useSyncExternalStore } from 'react'
 import clsx from 'clsx'
-import { IconCheckOutline16, RiskConfirmation, useAnchoredMaxHeight } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconCheckOutline16, RiskConfirmation, speakNavText, useAnchoredMaxHeight } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { filterOptions } from './popup.ts'
 import type { PopupSelectController } from './popup.ts'
@@ -73,6 +73,15 @@ export function PopupSelectView({ popup, t }: PopupSelectViewProps) {
   useEffect(() => {
     if (state.open && state.confirming === null) searchRef.current?.focus()
   }, [state.open, state.confirming])
+
+  // Voice navigation: announce the highlighted option as arrows move it
+  // (focus stays in the search input, so focusin delegation never fires here).
+  const highlightLabel = active !== null
+    ? filterOptions(state.options, state.search)[active]?.label
+    : undefined
+  useEffect(() => {
+    if (highlightLabel !== undefined) speakNavText(highlightLabel)
+  }, [highlightLabel])
 
   if (!state.open) return null
 

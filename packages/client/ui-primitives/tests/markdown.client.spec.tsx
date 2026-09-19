@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MessageText } from '@deepseek-ai/dsh-client-ui-primitives'
 import { JsonBlock, MarkdownText } from './markdown-test-components.tsx'
 import { cjkFriendlyStrong } from '../src/markdown/cjkFriendlyStrong.ts'
@@ -269,6 +269,25 @@ describe('MarkdownText', () => {
   it('forwards localized labels to fenced code blocks', () => {
     render(<MarkdownText text={'```ts\nconst answer = 42\n```'} codeLabels={{ copyLabel: 'Copy code', copiedLabel: 'Copied' }} />)
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeTruthy()
+  })
+
+  it('names fence regions and reads them aloud through onSpeakCode', () => {
+    const onSpeakCode = vi.fn()
+    render(
+      <MarkdownText
+        text={'```ts\nconst a = 1\nconst b = 2\n```'}
+        codeLabels={{
+          copyLabel: 'Copy code',
+          copiedLabel: 'Copied',
+          speakLabel: 'Read aloud',
+          describeCode: (lang, lines) => `${lang ?? 'plain'} code, ${lines} lines`,
+        }}
+        onSpeakCode={onSpeakCode}
+      />,
+    )
+    expect(screen.getByRole('region', { name: 'ts code, 2 lines' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Read aloud' }))
+    expect(onSpeakCode).toHaveBeenCalledWith(['const a = 1', 'const b = 2'])
   })
 
   it('renders absolute HTTP(S) images with bounded presentation', () => {

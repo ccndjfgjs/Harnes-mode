@@ -1,0 +1,6 @@
+{
+  "name": "deepseek-harness-electron",
+  "private": true,
+  "type": "commonjs",
+  "main": "main.js"
+}

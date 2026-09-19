@@ -1,0 +1,87 @@
+/* Motion layer: the shell's baseline smoothness and focus treatment.
+ *
+ * Component sheets own their own choreography (the sidebar rail, the composer
+ * dock, message entrances). This sheet only supplies the two things every
+ * interactive surface should get for free and would otherwise each restate:
+ *
+ *   1. A transition baseline for native controls. Element selectors carry
+ *      lower specificity than any CSS-Module class, so a component that
+ *      declares its own `transition` (or `transition: none`) always wins —
+ *      this is a fallback, never an override.
+ *
+ *   2. A single focus-visible ring, drawn with `outline` so it costs no layout
+ *      and never collides with the hairline border contract (borders stay
+ *      0.5px; the ring is a separate paint).
+ *
+ * Everything is inside a `prefers-reduced-motion: no-preference` guard so the
+ * OS setting removes the motion wholesale rather than per-rule. */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Native controls: hover/press feedback eases on the standard curve. Only
+     paint properties transition — never `width`/`height`/`padding`, which
+     would make a hover reflow the layout it sits in. */
+  button,
+  input,
+  select,
+  textarea,
+  summary,
+  [role='button'],
+  [role='tab'],
+  [role='menuitem'] {
+    transition:
+      background-color var(--dsh-motion-fast) var(--dsh-ease-standard),
+      border-color var(--dsh-motion-fast) var(--dsh-ease-standard),
+      color var(--dsh-motion-fast) var(--dsh-ease-standard),
+      box-shadow var(--dsh-motion-base) var(--dsh-ease-standard),
+      opacity var(--dsh-motion-fast) var(--dsh-ease-standard),
+      transform var(--dsh-motion-fast) var(--dsh-ease-standard);
+  }
+
+  /* Links in prose keep the underline; only their color eases. */
+  a {
+    transition: color var(--dsh-motion-fast) var(--dsh-ease-standard);
+  }
+}
+
+/* Focus ring. Applied to the same control set, on the business blue so it
+   reads as brand in both palettes (brand-primary resolves to ink). The 2px
+   offset lifts the ring off the 0.5px hairline border so the two never
+   overlap. */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[role='button']:focus-visible,
+[role='tab']:focus-visible,
+[role='menuitem']:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+/* Pointer focus should not paint the ring; only keyboard focus does. */
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible),
+summary:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Reduced motion: drop the baseline transitions and the entrance curves the
+   shell adds. The focus ring stays — it is a state indicator, not motion. */
+@media (prefers-reduced-motion: reduce) {
+  button,
+  input,
+  select,
+  textarea,
+  summary,
+  [role='button'],
+  [role='tab'],
+  [role='menuitem'],
+  a {
+    transition: none;
+  }
+}

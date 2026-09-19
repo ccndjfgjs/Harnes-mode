@@ -26,3 +26,15 @@ export const en = {
   'listbox.aria': '/{command} matches',
   'notice.imagesUnsupported': '/{command} does not accept image attachments; remove them first',
 } satisfies Record<CommandKey, string>
+
+/** Russian dictionary, checked complete against the zh key set. */
+export const ru = {
+  'search.placeholder': 'Поиск…',
+  'search.aria': 'Фильтр вариантов',
+  'status.loading': 'Загрузка вариантов…',
+  'status.applying': 'Применение…',
+  'status.empty': 'Нет вариантов',
+  'overlay.aria': 'Варианты /{command}',
+  'listbox.aria': 'Совпадения /{command}',
+  'notice.imagesUnsupported': '/{command} не принимает изображения; сначала уберите их',
+} satisfies Record<CommandKey, string>

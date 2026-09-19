@@ -34,6 +34,23 @@ const COLLAPSE_SETTLE_MS = 150
  */
 const SCROLLBAR_LINGER_MS = 2000
 
+/**
+ * Read custom brand text from customization settings (live, no package edge).
+ * @returns the stored brand name, or undefined when the user never set one.
+ */
+function readCustomBrandName(): string | undefined {
+  try {
+    const raw = localStorage.getItem('dsh.customization.settings')
+    if (raw !== null) {
+      const data = JSON.parse(raw) as { brandName?: unknown }
+      if (typeof data.brandName === 'string' && data.brandName.trim().length > 0) return data.brandName.trim().slice(0, 80)
+    }
+  } catch {
+    // A foreign writer corrupted the document: the product name stands in.
+  }
+  return undefined
+}
+
 /** Format complete-build metadata for the local brand badge. */
 function localBuildVersion(): string | undefined {
   const version = process.env.DSH_CLIENT_VERSION
@@ -122,6 +139,25 @@ export function SidebarRoot({
   }, [pointerInside])
 
   const buildVersion = localBuildVersion()
+  const [customBrand, setCustomBrand] = useState<string | undefined>(() => readCustomBrandName())
+  useEffect(() => {
+    const onStorage = (e: StorageEvent): void => {
+      if (e.key === 'dsh.customization.settings') setCustomBrand(readCustomBrandName())
+    }
+    const onCustom = (): void => { setCustomBrand(readCustomBrandName()) }
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('dsh-customization-change', onCustom as EventListener)
+    // Poll for same-tab saves (storage event doesn't fire in same document)
+    const iv = window.setInterval(() => {
+      const cur = readCustomBrandName()
+      setCustomBrand(prev => prev === cur ? prev : cur)
+    }, 1000)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('dsh-customization-change', onCustom as EventListener)
+      window.clearInterval(iv)
+    }
+  }, [])
 
   return (
     <div
@@ -154,10 +190,10 @@ export function SidebarRoot({
               <span className={css.brandName}>
                 {renderSlot('sidebar.brand.name', {}, {
                   fallback: buildVersion === undefined
-                    ? <span className={css.fallbackBrandName}>{t('brand.localBuild')}</span>
+                    ? <span className={css.fallbackBrandName}>{customBrand ?? t('brand.localBuild')}</span>
                     : (
                       <span className={css.localBuildBrand}>
-                        <span className={css.localBuildTitle}>{t('brand.localBuild')}</span>
+                        <span className={css.localBuildTitle}>{customBrand ?? t('brand.localBuild')}</span>
                         <span className={css.buildVersion}>{buildVersion}</span>
                       </span>
                     ),

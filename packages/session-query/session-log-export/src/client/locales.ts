@@ -25,5 +25,17 @@ export const en: Record<keyof typeof zh, string> = {
   'dialog.commandFailed': 'Could not start the Session export.',
 }
 
+/** Russian Session export strings. */
+export const ru: Record<keyof typeof zh, string> = {
+  'header.action': 'Журнал сессии',
+  'dialog.preparingTitle': 'Экспорт сессии',
+  'dialog.preparingDescription': 'Готовится ZIP с текущей сессией, суб-сессиями и вложениями.',
+  'dialog.successTitle': 'Скачивание сессии началось',
+  'dialog.successDescription': 'Браузер скачивает ZIP сессии.',
+  'dialog.errorTitle': 'Ошибка экспорта сессии',
+  'dialog.close': 'Закрыть',
+  'dialog.commandFailed': 'Не удалось начать экспорт сессии.',
+}
+
 /** Stable locale keys consumed by the shared modal. */
 export type SessionLogDownloadKey = keyof typeof zh

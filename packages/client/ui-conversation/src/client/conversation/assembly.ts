@@ -38,6 +38,16 @@ export interface ConversationBinding {
   target<Target extends Extract<keyof ConversationViewSnapshotMap, string>>(
     target: Target,
   ): ObservableSnapshot<ConversationViewSnapshotMap[Target] | undefined>
+  /**
+   * Wait for the answer to the next **live** turn in this Session.
+   *
+   * The one seam that separates a fresh answer from a replayed one: history
+   * pages arrive through `prepend`/`replaceWindow` and never settle this, so
+   * opening an old conversation stays silent. Register before submitting.
+   * @param listener - receives the answer text of the next live message.
+   * @returns deregistration for the waiter.
+   */
+  awaitAnswer(listener: (text: string) => void): () => void
 }
 
 class BoundConversation implements ConversationBinding {
@@ -81,6 +91,10 @@ class BoundConversation implements ConversationBinding {
 
   activate(target: string): void {
     if (this.assembler.activateTarget(target)) this.snapshot.set(this.currentSnapshot())
+  }
+
+  awaitAnswer(listener: (text: string) => void): () => void {
+    return this.assembler.awaitAnswer(listener)
   }
 
   rebuild(): void { this.publish(this.assembler.rebuildRegistry()) }
@@ -237,6 +251,26 @@ export class UiConversation extends Service {
    */
   imageUrl(sessionId: SessionId, attachment: ImageAttachmentRef): Promise<string> {
     return this.images.resolve(sessionId, attachment)
+  }
+
+  /**
+   * Wait for the answer to the next **live** turn in one Session.
+   *
+   * Routed through the resident binding, so a waiter shares the same live feed
+   * the transcript is built from and settles only on a freshly appended
+   * `assistant/message` — never on a history page. This is what lets a reader
+   * of answers speak a reply without speaking the archive.
+   * @param sessionId - Session whose next answer is awaited.
+   * @param listener - receives the answer text of the next live message.
+   * @returns deregistration for the waiter.
+   * @throws {Error} when the Session has no resident binding.
+   */
+  awaitAnswer(sessionId: SessionId, listener: (text: string) => void): () => void {
+    const record = this.bindings.get(sessionId)
+    if (record === undefined) {
+      throw new Error(`uiConversation.awaitAnswer: unknown session "${sessionId}"`)
+    }
+    return record.binding.awaitAnswer(listener)
   }
 
   /**

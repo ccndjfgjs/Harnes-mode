@@ -203,7 +203,7 @@ describe('dsh-doc skill consolidation', () => {
       const entry = resolve(root, dir, 'src/index.ts')
       expect(existsSync(entry), `${dir}: library entry`).toBe(true)
       const source = readFileSync(entry, 'utf8')
-      expect(source, `${dir}: entry must be a plain module, not a plugin`).not.toMatch(/export (?:default|\{[^}]*default[^}]*\} from)/u)
+      expect(source, `${dir}: entry must be a plain module, not a plugin`).not.toMatch(/export (?:default\b|\{[^}]*\bdefault\b[^}]*\} from)/u)
       expect(source, `${dir}: entry must be a plain module, not a plugin`).not.toMatch(/export (?:async )?(?:function|const) apply\b/u)
     }
   })

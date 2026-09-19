@@ -123,6 +123,11 @@
         compressionLevel: 1
         compressionThresholdBytes: 1024
 
+    # Authenticated STT, vision-frame and realtime media endpoints owned by Harness.
+    - id: media-gateway
+      name: '@deepseek-ai/dsh-host-media-gateway'
+      inject: [connection, webServer]
+
     # Web glue owned by this bundle: resolves the built frontend dist (an
     # assembly fact of dsh-web-app, never user config), mounts the
     # frontend-static fallback owner, registers the web-surface prompt
@@ -200,6 +205,12 @@
 
     - id: ui-settings-models
       name: '@deepseek-ai/dsh-client-ui-settings-models'
+
+    # Improve text: the provider and model the composer's draft-restructure
+    # button answers on. The page edits the Host-owned `draft-restructure`
+    # namespace; leaving it empty keeps that button on the Agent default.
+    - id: ui-settings-improve-text
+      name: '@deepseek-ai/dsh-client-ui-settings-improve-text'
 
     - id: ui-settings-plugin-inventory
       name: '@deepseek-ai/dsh-client-ui-settings-plugin-inventory'
@@ -294,6 +305,43 @@
     # cards. A namespace this deployment does not expose renders nothing.
     - id: ui-settings-plugins
       name: '@deepseek-ai/dsh-client-ui-settings-plugins'
+
+    # Voice connections: the STT/TTS settings page the composer voice
+    # buttons preflight before sending any audio.
+    - id: ui-settings-voice
+      name: '@deepseek-ai/dsh-client-ui-settings-voice'
+
+    # Cloud accounts: the OAuth 2.0 connect cards (Google Drive, Gmail,
+    # GitHub, Mega) plus the Authorization list of connected clouds and the
+    # /cloud trigger source (one button per connected cloud, drill-down file
+    # picking into composer references).
+    - id: ui-settings-accounts
+      name: '@deepseek-ai/dsh-client-ui-settings-accounts'
+
+    # Accessibility: reading mode, sound notifications, fonts, TTS markup
+    # filtering, and high-contrast themes.
+    - id: ui-settings-accessibility
+      name: '@deepseek-ai/dsh-client-ui-settings-accessibility'
+
+    # Screen Broadcast: capture cadence, preview window, frame quality, and
+    # end behavior for the composer screen button.
+    - id: ui-settings-screen
+      name: '@deepseek-ai/dsh-client-ui-settings-screen'
+
+    # Network: the V2Ray tunnel that routes requests through a user server,
+    # with share-link and subscription import. The tunnel itself is owned by
+    # the desktop shell; this page edits the document it reads at startup.
+    - id: ui-settings-network
+      name: '@deepseek-ai/dsh-client-ui-settings-network'
+
+    # Customization: accent, density, message, and background template cards.
+    - id: ui-settings-customization
+      name: '@deepseek-ai/dsh-client-ui-settings-customization'
+
+    # About: the mod story — mission, differences from the official build,
+    # and the accessibility commitments. Read-only page.
+    - id: ui-settings-about
+      name: '@deepseek-ai/dsh-client-ui-settings-about'
 
     # Plan control: the composer plan seat over the plan projection + /plan channel.
     - id: ui-plan

@@ -8,6 +8,9 @@
   cursor: pointer;
   user-select: none;
   color: var(--dsw-alias-label-primary);
+  transition:
+    background-color var(--dsh-motion-fast) var(--dsh-ease-standard),
+    color var(--dsh-motion-fast) var(--dsh-ease-standard);
 }
 
 .projectRow:hover,
@@ -15,8 +18,10 @@
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
+/* Selected sits one tonal step above hover: hover answers the pointer, the
+   selected row states where you are, so the two must not read alike. */
 .sessionRow.selected {
-  background: var(--dsw-alias-interactive-bg-hover);
+  background: var(--dsw-specific-sidebar-nav-item-active);
 }
 
 .searchResultRow {
@@ -360,6 +365,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .projectRow,
   .sessionRow,
   .arrow {
     animation: none;

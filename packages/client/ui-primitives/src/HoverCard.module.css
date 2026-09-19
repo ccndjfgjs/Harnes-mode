@@ -38,7 +38,7 @@
 }
 
 .copied {
-  color: #FFFFFF;
+  color: var(--dsw-alias-label-primary-inverted);
   font-size: 14px;
   line-height: 20px;
   text-align: center;

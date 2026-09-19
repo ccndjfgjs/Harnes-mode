@@ -28,3 +28,16 @@ export const en = {
   'fontSize.increase': 'Increase font size',
   'fontSize.decrease': 'Decrease font size',
 } satisfies Record<ThemeKey, string>
+
+/** Russian dictionary, checked complete against the zh key set. */
+export const ru = {
+  'appearance.title': 'Оформление',
+  'appearance.light': 'Светлая',
+  'appearance.dark': 'Тёмная',
+  'appearance.system': 'Как в системе',
+  'fontSize.title': 'Размер шрифта',
+  'fontSize.description': 'Влияет только на текст сессий',
+  'fontSize.unit': 'px',
+  'fontSize.increase': 'Увеличить шрифт',
+  'fontSize.decrease': 'Уменьшить шрифт',
+} satisfies Record<ThemeKey, string>

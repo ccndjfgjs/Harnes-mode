@@ -16,7 +16,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  IconDislikeOutline16, IconLikeOutline16, Tooltip, useAnchoredPosition,
+  IconDislikeOutline16, IconLikeOutline16, speakNavText, Tooltip, useAnchoredPosition,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MessageFeedbackRating } from '@deepseek-ai/dsh-message-feedback/types'
 import type { MessageFeedbackActionProps } from './slots.ts'
@@ -97,12 +97,20 @@ export function MessageFeedbackActions({ messageId, ensure, rate, toggle, clearN
   const onRate = useCallback((next: MessageFeedbackRating) => {
     setPending(true)
     setRowFailure(null)
+    // Voice: confirm the action immediately (master switch inside speakNavText).
+    try {
+      const label = next === 'positive'
+        ? (rating === 'positive' ? t('action.dislike') : t('action.likeActive'))
+        : (rating === 'negative' ? t('action.like') : t('action.dislikeActive'))
+      // Fallback to short confirmation if dictionary key missing.
+      speakNavText(label ?? (next === 'positive' ? 'Нравится' : 'Не нравится'))
+    } catch {}
     // The controller decides retract-vs-replace from the committed item, so a
     // click that lands before the first list read still toggles the stored
     // value instead of this render's empty view.
     closeNote()
     void toggle(messageId, next).then(settleRating)
-  }, [closeNote, messageId, settleRating, toggle])
+  }, [closeNote, messageId, rating, settleRating, t, toggle])
 
   // The rating is a parameter because only the note editor's render site can
   // prove one is recorded; that removes an unreachable undefined guard here.

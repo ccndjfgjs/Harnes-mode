@@ -315,7 +315,9 @@ describe('DetailsPanel Output section (read)', () => {
           addImages: () => true,
           removeImage: () => {},
           pruneImages: () => {},
+          restructureDraft: async (text: string) => text,
           submit: () => {},
+          awaitAnswer: async () => { throw new Error('unused') },
         }}
         useProjection={(() => undefined)}
         useStore={bindSnapshotSelector(chat)}

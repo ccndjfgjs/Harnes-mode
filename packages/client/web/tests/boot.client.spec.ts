@@ -8,6 +8,28 @@ import type {
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AppWebEntry } from '../src/boot.ts'
 
+/**
+ * Counts the app-wide installs the boot kernel performs. The read-aloud backend
+ * is only reachable through `setTtsBackend`, so "boot installed it" is asserted
+ * by observing the call rather than by re-reading the source.
+ */
+const installs = vi.hoisted(() => ({ speech: 0, capture: 0 }))
+
+vi.mock('@deepseek-ai/dsh-client-ui-primitives', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return {
+    ...actual,
+    installSpeechEngine: () => {
+      installs.speech += 1
+      return () => { installs.speech -= 1 }
+    },
+    installScreenCapture: () => {
+      installs.capture += 1
+      return () => { installs.capture -= 1 }
+    },
+  }
+})
+
 const MODULES_ID = '@deepseek-ai/dsh-client-modules'
 const PROVIDER_CLIENT_ID = 'provider/client'
 const RUNTIME_CLIENT_ID = 'runtime/client'
@@ -19,6 +41,8 @@ const moduleFace = modulesClient as unknown as Record<string, unknown>
 
 afterEach(() => {
   vi.restoreAllMocks()
+  installs.speech = 0
+  installs.capture = 0
   delete win.__DSH_BOOT__
   delete win.__ModuleLoader__
   delete transportGlobal.__DSH_TRANSPORT__
@@ -55,6 +79,30 @@ async function expectBootFailure(setup: () => void, message: string): Promise<vo
   await entry.dispose()
 }
 
+describe('app-wide voice wiring', () => {
+  it('installs the read-aloud engine and takes it down again', async () => {
+    const container = document.createElement('div')
+    document.body.append(container)
+    const entry = new AppWebEntry(container)
+    // Without this install the Accessibility voice never reaches the provider
+    // chosen in Voice Settings.
+    expect(installs.speech).toBe(1)
+    await entry.dispose()
+    expect(installs.speech).toBe(0)
+  })
+
+  it('installs the screen capture and takes it down again', async () => {
+    const container = document.createElement('div')
+    document.body.append(container)
+    const entry = new AppWebEntry(container)
+    // Installed here, not inside the toolbar, so a broadcast outlives the
+    // panel that started it.
+    expect(installs.capture).toBe(1)
+    await entry.dispose()
+    expect(installs.capture).toBe(0)
+  })
+})
+
 describe('bootstrap failure rendering', () => {
   it('renders a missing bootstrap facade', async () => {
     await expectBootFailure(
@@ -89,8 +137,16 @@ describe('bootstrap failure rendering', () => {
   })
 })
 
+/**
+ * Both activation cases boot a real module system, which resolves dynamic
+ * imports; on a saturated test runner the default 5s budget is not enough and
+ * the case fails as a timeout while passing in under 100ms alone. This budget
+ * only trips on a genuine hang.
+ */
+const BOOT_TIMEOUT_MS = 20_000
+
 describe('plugin activation', () => {
-  it('prefetches a parser-loaded immediate row through the injected bundle transport', async () => {
+  it('prefetches a parser-loaded immediate row through the injected bundle transport', { timeout: BOOT_TIMEOUT_MS }, async () => {
     const container = document.createElement('div')
     document.body.append(container)
     const target = installFacade()
@@ -157,7 +213,7 @@ describe('plugin activation', () => {
     await entry.dispose()
   })
 
-  it('allows a modules-dependent row to be created before the modules row', async () => {
+  it('allows a modules-dependent row to be created before the modules row', { timeout: BOOT_TIMEOUT_MS }, async () => {
     const events: string[] = []
     const container = document.createElement('div')
     document.body.append(container)

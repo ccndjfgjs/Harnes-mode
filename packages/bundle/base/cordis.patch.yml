@@ -78,6 +78,15 @@
         provider: deepseek-official
         model: deepseek-v4-flash
 
+    # The composer draft-restructure button ("Улучшить текст") answers on this
+    # route when the user has chosen one on its own settings page; the empty
+    # default keeps the Agent model above as the fallback.
+    - id: draft-restructure-model
+      name: '@deepseek-ai/dsh-draft-restructure-model'
+      config:
+        provider: ''
+        model: ''
+
     - id: jobs
       name: '@deepseek-ai/dsh-jobs-local'
 

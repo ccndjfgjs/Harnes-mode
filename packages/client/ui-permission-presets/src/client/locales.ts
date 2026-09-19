@@ -35,6 +35,22 @@ export const en = {
   'confirm.enable': 'Enable Full access',
 } satisfies Record<PermissionSettingsKey, string>
 
+/** Russian dictionary, checked complete against the zh key set. */
+export const ru = {
+  'title': 'Доступ',
+  'description': 'Режим доступа по умолчанию для новых сессий',
+  'loading': 'Загрузка',
+  'unavailable': 'Недоступно',
+  'preset.readOnly': 'Только просмотр',
+  'preset.workspaceWrite': 'Изменения в папке',
+  'preset.fullAccess': 'Полный доступ',
+  'confirm.title': 'Включить полный доступ?',
+  'confirm.description': 'Полный доступ уменьшает число подтверждений для новых сессий и позволяет напрямую выполнять больше действий, включая чувствительные операции, изменение файлов и внешние команды. Используйте, только если доверяете следующим задачам.',
+  'confirm.acknowledge': 'Я понимаю риски и хочу продолжить',
+  'confirm.cancel': 'Отмена',
+  'confirm.enable': 'Включить полный доступ',
+} satisfies Record<PermissionSettingsKey, string>
+
 /** Simplified Chinese dictionary for the current-session popup gate. */
 export const accessZh = {
   'preset.readOnly': '仅可查看',
@@ -60,4 +76,16 @@ export const accessEn = {
   'confirm.acknowledge': 'I understand the risks and want to continue',
   'confirm.cancel': 'Cancel',
   'confirm.enable': 'Enable Full access',
+} satisfies Record<PermissionAccessKey, string>
+
+/** Russian dictionary for the current-session popup gate. */
+export const accessRu = {
+  'preset.readOnly': 'Только просмотр',
+  'preset.workspaceWrite': 'Изменения в папке',
+  'preset.fullAccess': 'Полный доступ',
+  'confirm.title': 'Включить полный доступ?',
+  'confirm.description': 'Полный доступ уменьшает число подтверждений и позволяет агенту напрямую выполнять больше действий, включая чувствительные операции, изменение файлов и внешние команды. Используйте, только если доверяете текущей задаче.',
+  'confirm.acknowledge': 'Я понимаю риски и хочу продолжить',
+  'confirm.cancel': 'Отмена',
+  'confirm.enable': 'Включить полный доступ',
 } satisfies Record<PermissionAccessKey, string>

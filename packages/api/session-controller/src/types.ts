@@ -287,6 +287,23 @@ export interface SessionRenameValue {
   readonly seq: number
 }
 
+/**
+ * Composer draft-restructure request: one rough draft, restructured by the
+ * configured model and handed straight back to the caller. Nothing is
+ * admitted to any Session log, so this carries no Session identity — it is a
+ * text transformation, not a turn.
+ */
+export interface DraftRestructureRequest {
+  /** The draft exactly as the composer holds it. */
+  readonly text: string
+}
+
+/** The model's replacement for the submitted draft. */
+export interface DraftRestructureValue {
+  /** Replacement text, already trimmed of the model's own wrapping. */
+  readonly text: string
+}
+
 /** Session fork request. */
 export interface SessionForkRequest {
   readonly sessionId: SessionId

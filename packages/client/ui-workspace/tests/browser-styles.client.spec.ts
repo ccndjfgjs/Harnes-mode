@@ -104,8 +104,12 @@ describe('WorkspaceBrowser.module.css list', () => {
     expect(rowDeclarations('.sessionRow')?.get('height')).toBe('32px')
     expect(rowDeclarations('.flatSessionRowWithoutStatus .title')?.get('margin-left')).toBe('0')
     expect(rowDeclarations('.searchResultRow')?.get('min-height')).toBe('48px')
-    expect(rowDeclarations('.sessionRow.selected')?.get('background'))
-      .toBe('var(--dsw-alias-interactive-bg-hover)')
+    // Selected sits one tonal step above hover, so the two must not read
+    // alike: the hover answer to the pointer and the resting "you are here"
+    // state are deliberately different tokens.
+    const selected = rowDeclarations('.sessionRow.selected')?.get('background')
+    expect(selected).toBe('var(--dsw-specific-sidebar-nav-item-active)')
+    expect(selected).not.toBe(rowDeclarations('.projectRow:hover')?.get('background'))
   })
 
   it('pins both rail controls to the shared left anchor during the column slide', () => {

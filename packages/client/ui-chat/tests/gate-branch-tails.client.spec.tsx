@@ -156,7 +156,9 @@ describe('render branch tails', () => {
           addImages: () => true,
           removeImage: () => {},
           pruneImages: () => {},
+          restructureDraft: async (text: string) => text,
           submit: () => {},
+          awaitAnswer: async () => { throw new Error('unused') },
         }}
         useStore={bindSnapshotSelector(chat)}
         actions={chat.actions}
@@ -218,7 +220,9 @@ describe('render branch tails', () => {
           addImages: () => true,
           removeImage: () => {},
           pruneImages: () => {},
+          restructureDraft: async (text: string) => text,
           submit: () => {},
+          awaitAnswer: async () => { throw new Error('unused') },
         }}
         useStore={bindSnapshotSelector(chat)}
         actions={chat.actions}

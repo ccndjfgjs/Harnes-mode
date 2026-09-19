@@ -182,6 +182,22 @@ describe('LocaleRuntime', () => {
     expect(() => { svc.setLocale('fr') }).toThrow('not registered')
   })
 
+  it('selects the shipped Russian locale with per-key dictionaries', () => {
+    const { svc } = make()
+    svc.register('ns', 'zh', { hello: '你好' })
+    svc.register('ns', 'en', { hello: 'Hello' })
+    svc.register('ns', 'ru', { hello: 'Привет' })
+    svc.setLocale('ru')
+    expect(svc.getLocale().active).toBe('ru')
+    expect(svc.bind('ns')('hello')).toBe('Привет')
+  })
+
+  it('adopts a Russian browser language automatically', () => {
+    stubLanguages('ru-RU')
+    const { svc } = make()
+    expect(svc.getLocale().active).toBe('ru')
+  })
+
   it('registers an external locale for selection, translation, persistence, and reversible disposal', () => {
     const host = stubSettingsScope<LocaleSettings>()
     const { svc, events } = make(host)
@@ -197,7 +213,7 @@ describe('LocaleRuntime', () => {
 
     dispose()
     expect(svc.getLocale().active).toBe('zh')
-    expect(svc.getLocale().locales.map(locale => locale.id)).toEqual(['zh', 'en'])
+    expect(svc.getLocale().locales.map(locale => locale.id)).toEqual(['zh', 'en', 'ru'])
     expect(svc.bind('ns')('hello')).toBe('Hello')
     const revision = svc.getLocale().revision
     dispose()
@@ -273,7 +289,7 @@ describe('LocaleRuntime', () => {
       .toThrow('locale fallback "fr" is not registered')
     expect(() => svc.addLanguage({ id: 'fr', label: 'Français', fallback: 'fr-CA' }))
       .toThrow('fallback cycle')
-    expect(svc.getLocale().locales.map(locale => locale.id)).toEqual(['zh', 'en', 'fr-CA'])
+    expect(svc.getLocale().locales.map(locale => locale.id)).toEqual(['zh', 'en', 'ru', 'fr-CA'])
   })
 
   it('adopts a saved external locale when its definition registers later', () => {
@@ -388,11 +404,12 @@ describe('LocaleRuntime', () => {
     expect(svc.bind('ns2')('onlyZh')).toBe('onlyZh')
   })
 
-  it('starts with exactly the two shipped locales and their fallback relation', () => {
+  it('starts with exactly the three shipped locales and their fallback relation', () => {
     const { svc } = make()
     expect(svc.getLocale().locales).toEqual([
       { id: 'zh', label: '中文', fallback: 'en' },
       { id: 'en', label: 'English' },
+      { id: 'ru', label: 'Русский', fallback: 'en' },
     ])
   })
 })

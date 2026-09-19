@@ -48,6 +48,7 @@
   border-radius: 22px;
   background: var(--dsw-specific-input-major);
   box-shadow: var(--dsw-elevation-soft);
+  transition: box-shadow var(--dsh-motion-slow) var(--dsh-ease-emphasized);
   /* The draft text follows the Settings font-size preference (the textarea,
      mirror, and backdrop all inherit from here, so the three layers stay in
      step); the line height keeps the default 10px leading via the shared px
@@ -69,6 +70,15 @@
    pattern, so the stroke is an ::after overlay: theme-token background masked
    by an SVG dash ring (stroke-width 2 centered on the box edge = 1px visible
    inside), which keeps the 22px radius and both themes. */
+/* Focus lift: the composer is the one surface that answers the caret, so it
+   gains the prominent tier and a firmer stroke while a draft is being typed.
+   Scoped away from the pick-a-workspace trigger, whose dashed affordance owns
+   its own stroke. */
+.card:not(.cardWorkspaceTrigger):focus-within {
+  --dsw-elevation-stroke-color: var(--dsw-alias-border-l3);
+  box-shadow: var(--dsw-elevation-prominent);
+}
+
 .cardWorkspaceTrigger {
   --dsw-elevation-stroke-color: transparent;
   cursor: pointer;
@@ -328,11 +338,13 @@
   border-radius: 999px;
   corner-shape: round;
   background: var(--dsw-alias-button-info-fill);
-  /* Static white, not the foreground token: the arrow stays white on the blue
-     fill in both themes (design 34:10465). */
-  color: #fff;
+  /* The fill is a theme token, so its text must be one too: a literal white
+     would stay white on the yellow theme's yellow fill. */
+  color: var(--dsw-alias-label-primary-inverted);
   cursor: pointer;
-  transition: background-color 100ms ease;
+  transition:
+    background-color var(--dsh-motion-fast) var(--dsh-ease-standard),
+    transform var(--dsh-motion-fast) var(--dsh-ease-standard);
   /* Opts out of the row's 2px downward shift (.row top pad): the send circle
      keeps its original seat while the smaller chips sit lower. Transform, not
      margin, so flex centering math is untouched. */
@@ -341,6 +353,12 @@
 
 .primary:hover:not(:disabled) {
   background: var(--dsw-alias-button-info-hover);
+  /* Answers the pointer without leaving the -2px seat. */
+  transform: translateY(-2px) scale(1.05);
+}
+
+.primary:active:not(:disabled) {
+  transform: translateY(-2px) scale(0.95);
 }
 
 .primary:disabled {
@@ -357,4 +375,16 @@
   color: inherit;
   font-size: 12px;
   cursor: pointer;
+}
+
+/* The focus lift and the send press are motion; the OS switch removes them. */
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .primary:hover:not(:disabled),
+  .primary:active:not(:disabled) {
+    transform: translateY(-2px);
+  }
 }

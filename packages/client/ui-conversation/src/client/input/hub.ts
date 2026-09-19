@@ -46,6 +46,15 @@ interface ConversationAttachmentFace {
   releaseDraftImage(id: DraftAttachmentId): void
 }
 
+/**
+ * Live-answer face, also resolved lazily. Kept separate from the attachment
+ * face above because this one is OPTIONAL at the call site: a wait for an
+ * answer that no conversation binding can serve must be reportable, not fatal.
+ */
+interface ConversationAnswerFace {
+  awaitAnswer(sessionId: SessionId, listener: (text: string) => void): () => void
+}
+
 /** Session-addressed input facade registry (SessionInputResolver face + composer-layer extras). */
 export class InputHub implements SessionInputResolver {
   private readonly shells = new Map<SessionId, SessionInputShell>()
@@ -90,6 +99,7 @@ export class InputHub implements SessionInputResolver {
       queue: queueReadFaceOf(session),
       defaultSink: (text, imageIds, mode, signal) => this.sink(session, text, imageIds, mode, signal),
       steerQueue: () => { void this.steerQueue(session, shell) },
+      awaitAnswer: () => this.answerRegistrar(id),
       commandImages: {
         serialize: ids => this.conversation().serializeDraftImages(ids),
         // Asymmetric with serialize on purpose: release settles AFTER the
@@ -227,5 +237,21 @@ export class InputHub implements SessionInputResolver {
     const conversation = this.rootCtx.get('conversation') as ConversationAttachmentFace | undefined
     if (conversation === undefined) throw new Error('conversation.input: conversation service unavailable')
     return conversation
+  }
+
+  /**
+   * Bind the live-answer registrar for one session, or undefined when the
+   * conversation service is absent. Resolved per call rather than captured:
+   * a shell built before the service exists must still construct, and its
+   * unanswered waits report "no binding" instead of failing the input plane.
+   * @param id - the session whose answers are awaited.
+   * @returns the registrar, or undefined while no binding can serve it.
+   */
+  private answerRegistrar(
+    id: SessionId,
+  ): ((listener: (text: string) => void) => () => void) | undefined {
+    const conversation = this.rootCtx.get('conversation') as ConversationAnswerFace | undefined
+    if (conversation === undefined) return undefined
+    return listener => conversation.awaitAnswer(id, listener)
   }
 }

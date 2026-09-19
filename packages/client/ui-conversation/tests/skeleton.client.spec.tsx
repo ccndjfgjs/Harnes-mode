@@ -229,6 +229,7 @@ function mount(
           renderSlot={renderSlot as never}
           bindDraftMirror={write => wiring.bindMirror(write)}
           openView={(view, focus) => { store.actions.openView(view, focus) }}
+          t={t}
         />
       )
     }

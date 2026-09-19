@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import { speakText } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ChatNodeViewProps, TurnTailOwnerProps } from '../contract/slots.ts'
 import { MessageIconActions } from './MessageIconActions.tsx'
 import { TurnTimePanel, TurnUsagePanel } from './TurnUsagePanel.tsx'
@@ -45,6 +46,7 @@ export const TurnTailNodeView = memo(function TurnTailNodeView({
         text={assistantText(closing.blocks)}
         time={closing.time}
         clock="end"
+        onSpeak={() => { speakText(assistantText(closing.blocks)) }}
         onBranch={() => { forkAt(closing.finalNode.seq) }}
         branchUnavailable={data.branchUnavailable || hasLaterChatNode}
         className={css.actions}

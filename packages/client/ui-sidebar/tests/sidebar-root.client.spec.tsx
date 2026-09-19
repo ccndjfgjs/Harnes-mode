@@ -17,6 +17,7 @@ const t: SidebarRootComponentProps['t'] = key =>
 
 afterEach(() => {
   cleanup()
+  localStorage.clear()
   vi.unstubAllEnvs()
   vi.useRealTimers()
 })
@@ -113,6 +114,23 @@ describe('SidebarRoot shell', () => {
     expect(screen.getByText('DSH Local Build')).toBeTruthy()
     expect(screen.getByText('1.2.3-rc.4-0123456-dirty')).toBeTruthy()
     expect(container.querySelector('svg')).not.toBeNull()
+  })
+
+  it('shows the stored custom brand name in place of the product fallback', () => {
+    localStorage.setItem(
+      'dsh.customization.settings',
+      JSON.stringify({ brandName: '  Acme Harness  ' }),
+    )
+    render(<SidebarRoot
+      collapsed={false} width={300}
+      useSessions={neverHook} useSessionPendingInteraction={useSessionPendingInteraction} useWorkspaces={neverHook}
+      startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}
+      renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode }) =>
+        options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
+    />)
+
+    expect(screen.getByText('Acme Harness')).toBeTruthy()
+    expect(screen.queryByText('DSH Local Build')).toBeNull()
   })
 
   it.each([

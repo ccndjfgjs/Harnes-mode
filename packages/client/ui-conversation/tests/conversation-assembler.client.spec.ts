@@ -1471,4 +1471,163 @@ describe('ConversationNodeAssembler', () => {
     assembler.flush()
     expect([...testSnapshot(assembler)?.nodes.values() ?? []][0]?.data).toBe(1)
   })
+
+  it('chimes live turn outcomes once, silent for history and disabled sound', () => {
+    const contexts: unknown[] = []
+    vi.stubGlobal('AudioContext', function CountingAudioContext(this: unknown) {
+      contexts.push(this)
+    })
+    // Node has no storage: a minimal document for the sound preference.
+    const store = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value)
+      },
+      removeItem: (key: string) => {
+        store.delete(key)
+      },
+      clear: () => {
+        store.clear()
+      },
+    })
+    try {
+      const assembler = new ConversationNodeAssembler(
+        new TestEventDefinitions([]),
+        new TestViewDefinitions([testView()]),
+      )
+      assembler.append(input(at(SessionSeq(1), 'turn/start', { turn: 1 })))
+      assembler.append(input(at(SessionSeq(2), 'turn/end', { turn: 1, reason: { kind: 'completed' } })))
+      assembler.append(input(at(SessionSeq(3), 'turn/start', { turn: 2 })))
+      assembler.append(input(at(SessionSeq(4), 'turn/end', { turn: 2, reason: { kind: 'error' } })))
+      assembler.append(input(at(SessionSeq(5), 'turn/start', { turn: 3 })))
+      assembler.append(input(at(SessionSeq(6), 'turn/end', { turn: 3, reason: { kind: 'aborted' } })))
+      expect(contexts).toHaveLength(2)
+      // Replayed history stays silent: replaceWindow re-matches without chiming.
+      assembler.replaceWindow([
+        input(at(SessionSeq(1), 'turn/start', { turn: 1 })),
+        input(at(SessionSeq(2), 'turn/end', { turn: 1, reason: { kind: 'completed' } })),
+      ], false)
+      expect(contexts).toHaveLength(2)
+      // Disabled sound stays silent.
+      store.set('dsh.accessibility.settings', JSON.stringify({ sound: false }))
+      assembler.append(input(at(SessionSeq(7), 'turn/start', { turn: 4 })))
+      assembler.append(input(at(SessionSeq(8), 'turn/end', { turn: 4, reason: { kind: 'completed' } })))
+      expect(contexts).toHaveLength(2)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+})
+
+/** An assistant message carrying only text blocks (the shape a reader speaks). */
+function answer(seq: SessionSeq, ...texts: readonly string[]): SessionLiveEventEntry {
+  return input(at(seq, 'assistant/message', {
+    turn: 1,
+    step: 1,
+    message: { role: 'assistant', content: texts.map(text => ({ type: 'text', text })) },
+  }))
+}
+
+describe('live answer waiters', () => {
+  const bench = (): ConversationNodeAssembler => new ConversationNodeAssembler(
+    new TestEventDefinitions([]),
+    new TestViewDefinitions([testView()]),
+  )
+
+  it('settles a waiter on a live assistant message', () => {
+    const assembler = bench()
+    const heard: string[] = []
+    assembler.awaitAnswer(text => heard.push(text))
+
+    assembler.append(answer(SessionSeq(1), 'готово'))
+
+    expect(heard).toEqual(['готово'])
+  })
+
+  it('stays silent when the same answer arrives as history', () => {
+    const assembler = bench()
+    const heard: string[] = []
+    assembler.awaitAnswer(text => heard.push(text))
+
+    // The very same message, replayed: opening a session, scrolling back, or
+    // any window replacement. This is the distinction the seam exists for.
+    assembler.replaceWindow([answer(SessionSeq(1), 'готово')], false)
+    assembler.flush()
+
+    expect(heard).toEqual([])
+  })
+
+  it('stays silent for a history page prepended above the live tail', () => {
+    const assembler = bench()
+    const heard: string[] = []
+    assembler.awaitAnswer(text => heard.push(text))
+
+    assembler.prepend([answer(SessionSeq(1), 'давний ответ')], false)
+    assembler.flush()
+
+    expect(heard).toEqual([])
+  })
+
+  it('joins several text blocks and ignores a blank answer', () => {
+    const assembler = bench()
+    const heard: string[] = []
+    assembler.awaitAnswer(text => heard.push(text))
+
+    assembler.append(answer(SessionSeq(1), ''))
+    expect(heard).toEqual([])
+
+    assembler.append(answer(SessionSeq(2), 'первый', 'второй'))
+    expect(heard).toEqual(['первый\n\nвторой'])
+  })
+
+  it('ignores reasoning and tool blocks, which are not spoken text', () => {
+    const assembler = bench()
+    const heard: string[] = []
+    assembler.awaitAnswer(text => heard.push(text))
+
+    assembler.append(input(at(SessionSeq(1), 'assistant/message', {
+      turn: 1,
+      step: 1,
+      message: {
+        role: 'assistant',
+        content: [
+          { type: 'reasoning', text: 'размышление' },
+          { type: 'tool-call', toolCallId: 'call', name: 'read', arguments: {} },
+          { type: 'text', text: 'видимый ответ' },
+        ],
+      },
+    })))
+
+    expect(heard).toEqual(['видимый ответ'])
+  })
+
+  it('settles one waiter once and leaves the next turn for the next waiter', () => {
+    const assembler = bench()
+    const first = vi.fn()
+    const second = vi.fn()
+    assembler.awaitAnswer(first)
+
+    assembler.append(answer(SessionSeq(1), 'ответ один'))
+    expect(first).toHaveBeenCalledTimes(1)
+
+    // A waiter registered after the fact sees nothing of the past turn.
+    assembler.awaitAnswer(second)
+    expect(second).not.toHaveBeenCalled()
+
+    assembler.append(answer(SessionSeq(2), 'ответ два'))
+    expect(first).toHaveBeenCalledTimes(1)
+    expect(second).toHaveBeenCalledWith('ответ два')
+  })
+
+  it('stops settling a waiter whose deregistration ran', () => {
+    const assembler = bench()
+    const heard = vi.fn()
+    const off = assembler.awaitAnswer(heard)
+
+    off()
+    assembler.append(answer(SessionSeq(1), 'уже не слышно'))
+
+    expect(heard).not.toHaveBeenCalled()
+  })
 })

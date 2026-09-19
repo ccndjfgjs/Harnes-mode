@@ -1,9 +1,11 @@
 // Shared IconActions chrome for user and assistant messages: copy
-// live, optional branch wiring, and an optional date-aware clock.
+// live, optional read-aloud, optional branch wiring, and an optional
+// date-aware clock.
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import {
-  IconBranchOutline16, IconCheckOutline16, IconCopyOutline16, Tooltip, writeClipboard,
+  IconBranchOutline16, IconCheckOutline16, IconCopyOutline16, IconPlayOutline16, speakNavText, Tooltip,
+  writeClipboard,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
 import { formatMessageClock } from './message-chrome.ts'
@@ -21,6 +23,11 @@ export interface MessageIconActionsProps {
   onBranch?: (() => void) | undefined
   /** The message is not a completed transcript tail, so branch stays visible but unavailable. */
   branchUnavailable?: boolean | undefined
+  /**
+   * Read the message aloud; omission hides the speak action (assistant
+   * answers wire the shared speech service, user bubbles stay quiet).
+   */
+  onSpeak?: (() => void) | undefined
   /** Parent layout class composed onto the actions row. */
   className?: string | undefined
   /**
@@ -43,7 +50,7 @@ export interface MessageIconActionsProps {
  * @returns The actions row element.
  */
 export function MessageIconActions({
-  text, time, clock, onBranch, branchUnavailable = false, className,
+  text, time, clock, onBranch, branchUnavailable = false, onSpeak, className,
   extraActions, usageAction, t,
 }: MessageIconActionsProps) {
   const day = useCalendarDay()
@@ -68,12 +75,13 @@ export function MessageIconActions({
       copyPending.current = false
       if (!ok) return
       setCopied(true)
+      try { speakNavText(t('copied')) } catch {}
       copyTimer.current = window.setTimeout(() => {
         copyTimer.current = null
         setCopied(false)
       }, 1000)
     })
-  }, [copied, text])
+  }, [copied, text, t])
   const clockEl = time === undefined ? null : (
     <span className={clock === 'start' ? css.timeStart : css.timeEnd}>
       {formatMessageClock(time, t, day)}
@@ -87,6 +95,13 @@ export function MessageIconActions({
           {copied ? <IconCheckOutline16 /> : <IconCopyOutline16 />}
         </button>
       </Tooltip>
+      {onSpeak !== undefined && (
+        <Tooltip label={t('message.speak')} side="bottom">
+          <button type="button" className={css.action} aria-label={t('message.speak')} onClick={onSpeak}>
+            <IconPlayOutline16 />
+          </button>
+        </Tooltip>
+      )}
       {extraActions}
       {onBranch !== undefined && (
         <Tooltip label={branchUnavailable ? t('message.branchUnavailable') : t('message.branch')} side="bottom">

@@ -37,7 +37,10 @@
 .header {
   position: relative;
   flex: none;
-  padding: 12px 28px 0 20px;
+  /* 4px rhythm: the header insets join the same grid the transcript and the
+     composer clearances are built on, so the title rail lines up with the
+     content column beneath it. */
+  padding: var(--dsh-space-3) var(--dsh-space-6) 0 var(--dsh-space-5);
   border-bottom: 1px solid transparent;
 }
 

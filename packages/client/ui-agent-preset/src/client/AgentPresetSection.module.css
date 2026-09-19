@@ -184,15 +184,22 @@
 .cardHead {
   display: flex;
   align-items: center;
-  gap: 8px;
+  /* The name shares the line with the trust badge and the in-use pill, and
+     the two of them together are wider than a card in the two-column grid.
+     Letting the row wrap drops the badges to their own line instead of
+     breaking the name itself in two. */
+  flex-wrap: wrap;
+  column-gap: 8px;
+  row-gap: 6px;
   /* Anchors the broken badge's tooltip: the badge itself stays unpositioned so
-     its `::after` resolves against the card's own width instead of against a
-     badge that sits partway across it. A tooltip grown from the badge would
-     run past the card, and past the section for a card in the last column. */
+    its `::after` resolves against the card's own width instead of against a
+    badge that sits partway across it. A tooltip grown from the badge would
+    run past the card, and past the section for a card in the last column. */
   position: relative;
 }
 
 .cardName {
+  min-width: 0;
   font-size: 15px;
   font-weight: 600;
   line-height: 1.4;

@@ -22,3 +22,13 @@ export const en = {
   'chip.off.title': 'Plan mode off — click to turn on (/plan)',
   'chip.exitFailed': 'Failed to exit plan mode',
 } satisfies Record<PlanKey, string>
+
+/** Russian dictionary, checked complete against the zh key set. */
+export const ru = {
+  'chip.label': 'План',
+  'chip.on.aria': 'Режим плана включён, нажмите чтобы выключить',
+  'chip.on.title': 'Режим плана включён — нажмите чтобы выключить (/plan off)',
+  'chip.off.aria': 'Режим плана выключен, нажмите чтобы включить',
+  'chip.off.title': 'Режим плана выключен — нажмите чтобы включить (/plan)',
+  'chip.exitFailed': 'Не удалось выйти из режима плана',
+} satisfies Record<PlanKey, string>

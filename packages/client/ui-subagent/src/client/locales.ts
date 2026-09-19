@@ -85,5 +85,46 @@ export const en: Record<SubagentKey, string> = {
   'readonly.body': 'The parent session is offline; reopen it to continue sending messages.',
 }
 
+/** Russian dictionary, key-identical to the Chinese source of truth. */
+export const ru: Record<SubagentKey, string> = {
+  'diagnostic.corrupt': 'запись сессии повреждена',
+  'diagnostic.unsupported': 'версия записи суб-агента не поддерживается',
+  'diagnostic.unavailable': 'запись сессии временно недоступна',
+  'duration.seconds': '{seconds} с',
+  'duration.minutes': '{minutes} мин {seconds} с',
+  'duration.hours': '{hours} ч {minutes} мин {seconds} с',
+  'duration.days': '{days} дн',
+  'duration.daysHours': '{days} дн {hours} ч',
+  'duration.months': 'ок. {months} мес',
+  'duration.monthsDays': 'ок. {months} мес {days} дн',
+  'duration.years': 'ок. {years} г',
+  'duration.yearsMonths': 'ок. {years} г {months} мес',
+  'duration.exactDays': '{days} дн {hours} ч {minutes} мин {seconds} с',
+  'duration.exactTitle': 'Всего активного времени: {duration}',
+  'tokens.thousand': '{value} тыс.',
+  'tokens.million': '{value} млн.',
+  'tokens.total': '{value} ток.',
+  'loading.label': 'Загрузка суб-агентов…',
+  'loading.aria': 'Загрузка суб-агентов',
+  'load.error': 'Не удалось загрузить суб-агентов',
+  'retry': 'Повторить',
+  'mode.oneShot': 'разовая',
+  'mode.continuable': 'продолжаемая',
+  'activity.running': 'выполняется',
+  'activity.inactive': 'сейчас не выполняется',
+  'branch.collapse': 'Свернуть дочерние суб-агенты {label}',
+  'branch.expand': 'Развернуть дочерние суб-агенты {label}',
+  'count.total.one': '{count} суб-агент',
+  'count.total.other': '{count} суб-агентов',
+  'count.running.one': '{count} суб-агент выполняется',
+  'count.running.other': 'Суб-агентов выполняется: {count}',
+  'switcher.aria': 'Переключить суб-агента: {title}',
+  'tree.aria': 'Сессии суб-агентов',
+  'readonly.oneShot.title': 'Запись разового суб-агента',
+  'readonly.title': 'Этот суб-агент пока только для чтения',
+  'readonly.oneShot.body': 'Разовые задачи не принимают продолжения; здесь можно посмотреть полную запись выполнения.',
+  'readonly.body': 'Родительская сессия не в сети; откройте её снова, чтобы продолжить отправку сообщений.',
+}
+
 /** Key domain of the `subagent` namespace (zh is the source of truth). */
 export type SubagentKey = keyof typeof zh

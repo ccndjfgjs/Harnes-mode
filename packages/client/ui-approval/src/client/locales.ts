@@ -20,3 +20,12 @@ export const en = {
   reject: 'Reject',
   allowOnce: 'Allow once',
 } satisfies Record<ApprovalKey, string>
+
+/** Russian dictionary, checked against the Chinese key set. */
+export const ru = {
+  waiting: 'Ожидание подтверждения',
+  'detail.aria': 'Детали подтверждения',
+  escalation: 'Инструмент {toolName} запрашивает расширенные права',
+  reject: 'Отклонить',
+  allowOnce: 'Разрешить один раз',
+} satisfies Record<ApprovalKey, string>

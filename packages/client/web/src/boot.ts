@@ -10,6 +10,9 @@ import type {
   BootManifest, ClientModuleCreateOptions, ClientModuleSystem, DshWindow,
 } from '@deepseek-ai/dsh-client-modules/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import {
+  installScreenCapture, installSpeechEngine, installVoiceNavArrowDelegation, installVoiceNavDelegation,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import { BootPage } from './boot-page.ts'
 import { getStaticModules } from './seed.ts'
 import { STATE_LABELS } from './loader-status.ts'
@@ -26,6 +29,10 @@ export class AppWebEntry {
   private ctx: Context | undefined
   private modules!: ClientModuleSystem
   private manifest!: BootManifest
+  private uninstallVoiceNav: (() => void) | undefined
+  private uninstallVoiceArrow: (() => void) | undefined
+  private uninstallSpeechEngine: (() => void) | undefined
+  private uninstallScreenCapture: (() => void) | undefined
 
   /**
    * Draw the boot page; {@link run} starts the loader.
@@ -36,6 +43,36 @@ export class AppWebEntry {
     this.container = container
     this.seams = seams
     this.page = new BootPage(container)
+    // App-wide voice navigation (one document listener for every menu/tab/
+    // listbox; silent until the Accessibility voiceNav toggle is on).
+    try {
+      this.uninstallVoiceNav = installVoiceNavDelegation()
+    } catch {
+      this.uninstallVoiceNav = undefined
+    }
+    try {
+      this.uninstallVoiceArrow = installVoiceNavArrowDelegation()
+    } catch {
+      this.uninstallVoiceArrow = undefined
+    }
+    // The read-aloud backend: without this install the Accessibility voice
+    // keeps speaking through the built-in engine and the provider, voice, and
+    // pacing chosen in Voice Settings never reach the answer. Installed here
+    // for the same reason as the nav delegations — it is app-wide and must
+    // exist before any surface can be read aloud.
+    try {
+      this.uninstallSpeechEngine = installSpeechEngine()
+    } catch {
+      this.uninstallSpeechEngine = undefined
+    }
+    // The screen-capture subsystem: an app-wide broadcast must outlive the
+    // panel that asked for it, so it is installed here rather than inside a
+    // component. See screen-capture-engine.
+    try {
+      this.uninstallScreenCapture = installScreenCapture()
+    } catch {
+      this.uninstallScreenCapture = undefined
+    }
   }
 
   /**
@@ -89,6 +126,14 @@ export class AppWebEntry {
     const ctx = this.ctx
     this.ctx = undefined
     if (ctx !== undefined) await ctx.fiber.dispose()
+    this.uninstallVoiceNav?.()
+    this.uninstallVoiceNav = undefined
+    this.uninstallVoiceArrow?.()
+    this.uninstallVoiceArrow = undefined
+    this.uninstallSpeechEngine?.()
+    this.uninstallSpeechEngine = undefined
+    this.uninstallScreenCapture?.()
+    this.uninstallScreenCapture = undefined
     this.page.dispose()
   }
 

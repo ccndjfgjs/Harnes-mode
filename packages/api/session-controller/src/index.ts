@@ -15,6 +15,7 @@ import {
 } from './agent.ts'
 import { SessionCommandController } from './commands.ts'
 import { SessionControlController } from './control.ts'
+import { DraftRestructure } from './draft-restructure.ts'
 import { SessionHistoryController } from './history.ts'
 import { SessionFileReferences } from './file-references.ts'
 import {
@@ -26,6 +27,8 @@ import { buildModelCatalog } from './catalog.ts'
 import { installModelSelectionProjection } from './model-selection-projection.ts'
 import { SessionSkillCatalog } from './skill-catalog.ts'
 import type {
+  DraftRestructureRequest,
+  DraftRestructureValue,
   ModelCatalog,
   SessionAttachmentRequest,
   SessionAttachmentValue,
@@ -109,6 +112,7 @@ export class SessionController extends TypertRemoteService {
   private readonly agents: ApiSessionAgentController
   private readonly commands: SessionCommandController
   private readonly controlState: SessionControlController
+  private readonly draftRestructure: DraftRestructure
   private readonly history: SessionHistoryController
   private readonly listState: ApiSessionList
   private readonly openPath: (path: string, signal: AbortSignal) => Promise<void>
@@ -126,6 +130,7 @@ export class SessionController extends TypertRemoteService {
     this.agents = new ApiSessionAgentController(ctx)
     this.commands = new SessionCommandController(ctx, this.agents, process.cwd())
     this.controlState = new SessionControlController(ctx)
+    this.draftRestructure = new DraftRestructure(ctx)
     // Registered before history so reverse-order teardown closes every
     // follower before waiting for already-admitted promotions.
     ctx.effect(() => async () => {
@@ -323,6 +328,20 @@ export class SessionController extends TypertRemoteService {
   @Remote('fork')
   fork(request: SessionForkRequest): Promise<SessionForkValue> {
     return this.commands.fork(request)
+  }
+
+  /**
+   * Restructure one composer draft through the configured model without
+   * opening a turn: nothing enters any Session log, and the caller replaces
+   * its own draft with the answer.
+   * @param request - the draft exactly as the composer holds it.
+   * @param signal - caller cancellation forwarded to the model adapter.
+   * @returns the replacement draft.
+   */
+  @Remote('restructureDraft')
+  restructureDraft(request: DraftRestructureRequest, signal: AbortSignal): Promise<DraftRestructureValue> {
+    signal.throwIfAborted()
+    return this.draftRestructure.restructure(request, signal)
   }
 
   /**

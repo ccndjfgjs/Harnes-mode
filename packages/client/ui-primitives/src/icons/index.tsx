@@ -7,6 +7,25 @@ import type { IconProps } from './props.ts'
 
 export type { IconProps } from './props.ts'
 
+/** ic_ds_accessibility_outline_16 (harness extract): head + outstretched figure. */
+export const IconAccessibilityOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="8" cy="3.4" r="1.7" stroke="currentColor" strokeWidth="1.4" />
+    <path d="M8 6v4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <path d="M3.5 7.5h9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <path d="M8 10.5 5.8 14.5M8 10.5l2.2 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+
+/** ic_ds_sliders_outline_16 (harness extract): tuning sliders for customization. */
+export const IconSlidersOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 5h2.2M7.8 5H14M2 11h6.7M12.3 11H14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <circle cx="6" cy="5" r="1.8" stroke="currentColor" strokeWidth="1.4" />
+    <circle cx="10.5" cy="11" r="1.8" stroke="currentColor" strokeWidth="1.4" />
+  </svg>
+)
+
 /** ic_ds_new_chat_outline_16 */
 export const IconNewChatOutline16 = ({ size = 16, className }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -906,6 +925,33 @@ export const IconAlarmClockOutline16 = ({ size = 16, className }: IconProps) => 
     <path d="M8 5.75V8.5L10 9.75" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
     <path d="m4.75 12.25-1 1.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
     <path d="m11.25 12.25 1 1.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+  </svg>
+)
+
+/** ic_ds_mic_outline_16 (harness extract): capsule mic + stand arc + base. */
+export const IconMicOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="6" y="1.5" width="4" height="7" rx="2" stroke="currentColor" strokeWidth="1.4" />
+    <path d="M4 7.5a4 4 0 0 0 8 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <path d="M8 11.5v2M5.5 14.5h5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+  </svg>
+)
+
+/** ic_ds_call_outline_16 (harness extract): handset for the realtime voice call. */
+export const IconCallOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M6.6 10.8c1.4 1.4 3.1 2.6 5 3.1l1-2.1 3 1.5v2.6c0 .6-.4 1.1-1 1.1C7.9 17 3 12.1 3 5.4c0-.6.5-1 1.1-1h2.6l1.5 3-1.6 3.4Z"
+      fill="currentColor"
+    />
+  </svg>
+)
+
+/** ic_ds_screen_outline_16 (harness extract): monitor + stand for screen share. */
+export const IconScreenOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1.5" y="2.5" width="13" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+    <path d="M6 13.5h4M8 11.5v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
   </svg>
 )
 

@@ -1,0 +1,213 @@
+/* Accessibility presentation layer: interface typeface and high-contrast
+ * themes driven by the `data-dsh-a11y-font` / `data-dsh-a11y-contrast`
+ * document-root attributes (see ui-settings-accessibility's
+ * apply-accessibility.ts). This sheet loads last in installThemeStyles, and
+ * every rule below out-specifies the base palette selectors, so no rule
+ * depends on source order to win.
+ *
+ * The font switch works by re-pointing the family variables the whole UI
+ * already reads: --dsw-font-family (interface), --dsw-font-mono and
+ * --ds-font-family-code (code). 'atkinson' names Atkinson Hyperlegible
+ * first so local installs apply, falling back to the product stack (the
+ * face is not bundled); 'mono' points everything at the system monospace
+ * stack, reusing the code stack (which deliberately omits a bare
+ * `monospace` tail so Windows CJK keeps its fonts).
+ *
+ * Contrast themes override the documented alias tokens only. 'bw' follows
+ * the active color scheme (body[data-ds-dark-theme] selects the black or
+ * the white variant); 'yellow' forces the black scheme and also flips the
+ * root color-scheme so native chrome matches. 'daltonism' remaps only the
+ * state tokens to an Okabe-Ito-inspired set (vermillion / bluish green /
+ * orange) that stays apart under red-green deficiency; shiki token colors
+ * are left intact everywhere for code readability, with only the shiki
+ * canvas tied to the mono palettes. */
+
+:root[data-dsh-a11y-font='atkinson'] body {
+  --dsw-font-family: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+:root[data-dsh-a11y-font='mono'] body {
+  --dsw-font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
+    'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
+  --dsw-font-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
+    'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
+  --ds-font-family-code: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
+    'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
+}
+
+:root[data-dsh-a11y-contrast='bw'] body:not([data-ds-dark-theme]) {
+  --dsw-alias-bg-base: #ffffff;
+  --dsw-alias-bg-layer-1: #f2f2f2;
+  --dsw-alias-bg-layer-2: #e6e6e6;
+  --dsw-alias-bg-layer-3: #ffffff;
+  --dsw-alias-bg-overlay: #ffffff;
+  --dsw-alias-bg-selector: #e6e6e6;
+  --dsw-alias-border-l1: #000000;
+  --dsw-alias-border-l2: #000000;
+  --dsw-alias-border-l3: #000000;
+  --dsw-alias-border-l4: #000000;
+  --dsw-alias-brand-primary: #000000;
+  --dsw-alias-button-info-fill: #000000;
+  --dsw-alias-button-primary-fill: #000000;
+  --dsw-alias-button-primary-dimmed: #333333;
+  --dsw-alias-button-primary-hover: var(--dsw-alias-label-tertiary);
+  --dsw-alias-label-primary-inverted: #ffffff;
+  --dsw-alias-label-primary-foreground: #ffffff;
+  --dsw-alias-label-primary: #000000;
+  --dsw-alias-label-caption: #1a1a1a;
+  --dsw-alias-label-secondary: #1a1a1a;
+  --dsw-alias-label-tertiary: #333333;
+  --dsw-alias-label-primary-dimmed: #333333;
+  --dsw-alias-label-dimmed: #4d4d4d;
+  --dsw-alias-state-error-primary: #000000;
+  --dsw-alias-state-success-primary: #000000;
+  --dsw-alias-state-warn-primary: #000000;
+  --dsw-specific-sidebar-fill: #f2f2f2;
+  --dsw-specific-sidebar-nav-item-active: #d9d9d9;
+  --dsw-specific-sidebar-nav-item-hover: #e6e6e6;
+  --dsw-specific-sidebar-nav-item-active-accent: #999999;
+  --shiki-background: #ffffff;
+  --shiki-foreground: #000000;
+}
+
+:root[data-dsh-a11y-contrast='bw'] body[data-ds-dark-theme] {
+  --dsw-alias-bg-base: #000000;
+  --dsw-alias-bg-layer-1: #0a0a0a;
+  --dsw-alias-bg-layer-2: #141414;
+  --dsw-alias-bg-layer-3: #000000;
+  --dsw-alias-bg-overlay: #000000;
+  --dsw-alias-bg-selector: #141414;
+  --dsw-alias-border-l1: #ffffff;
+  --dsw-alias-border-l2: #ffffff;
+  --dsw-alias-border-l3: #ffffff;
+  --dsw-alias-border-l4: #ffffff;
+  --dsw-alias-brand-primary: #ffffff;
+  --dsw-alias-button-info-fill: #ffffff;
+  --dsw-alias-button-primary-fill: #ffffff;
+  --dsw-alias-button-primary-dimmed: #cccccc;
+  --dsw-alias-button-primary-hover: var(--dsw-alias-label-tertiary);
+  --dsw-alias-label-primary-inverted: #000000;
+  --dsw-alias-label-primary-foreground: #000000;
+  --dsw-alias-label-primary: #ffffff;
+  --dsw-alias-label-caption: #e8e8e8;
+  --dsw-alias-label-secondary: #e8e8e8;
+  --dsw-alias-label-tertiary: #cccccc;
+  --dsw-alias-label-primary-dimmed: #cccccc;
+  --dsw-alias-label-dimmed: #999999;
+  --dsw-alias-state-error-primary: #ffffff;
+  --dsw-alias-state-success-primary: #ffffff;
+  --dsw-alias-state-warn-primary: #ffffff;
+  --dsw-specific-sidebar-fill: #0a0a0a;
+  --dsw-specific-sidebar-nav-item-active: #2b2b2b;
+  --dsw-specific-sidebar-nav-item-hover: #1f1f1f;
+  --dsw-specific-sidebar-nav-item-active-accent: #ffffff;
+  --shiki-background: #000000;
+  --shiki-foreground: #ffffff;
+}
+
+:root[data-dsh-a11y-contrast='yellow'] {
+  color-scheme: dark;
+}
+
+:root[data-dsh-a11y-contrast='yellow'] body {
+  --dsw-alias-bg-base: #000000;
+  --dsw-alias-bg-layer-1: #0a0a0a;
+  --dsw-alias-bg-layer-2: #141414;
+  --dsw-alias-bg-layer-3: #000000;
+  --dsw-alias-bg-overlay: #000000;
+  --dsw-alias-bg-selector: #141414;
+  --dsw-alias-border-l1: #ffff00;
+  --dsw-alias-border-l2: #ffff00;
+  --dsw-alias-border-l3: #ffff00;
+  --dsw-alias-border-l4: #ffff00;
+  --dsw-alias-brand-primary: #ffff00;
+  --dsw-alias-button-info-fill: #ffff00;
+  --dsw-alias-button-primary-fill: #ffff00;
+  --dsw-alias-button-primary-dimmed: #ddcc33;
+  --dsw-alias-button-primary-hover: var(--dsw-alias-label-tertiary);
+  --dsw-alias-label-primary-inverted: #000000;
+  --dsw-alias-label-primary-foreground: #000000;
+  --dsw-alias-label-primary: #ffff00;
+  --dsw-alias-label-caption: #ffee55;
+  --dsw-alias-label-secondary: #ffee55;
+  --dsw-alias-label-tertiary: #ddcc33;
+  --dsw-alias-label-primary-dimmed: #ddcc33;
+  --dsw-alias-label-dimmed: #b8a820;
+  --dsw-alias-state-error-primary: #ff6666;
+  --dsw-alias-state-success-primary: #ffff00;
+  --dsw-alias-state-warn-primary: #ffff00;
+  --dsw-specific-sidebar-fill: #000000;
+  --dsw-specific-sidebar-nav-item-active: #222200;
+  --dsw-specific-sidebar-nav-item-hover: #1a1a00;
+  --shiki-background: #000000;
+  --shiki-foreground: #ffff00;
+  /* Unlike `bw`, which follows the active scheme, this theme forces the black
+   * one: it applies even when the body carries no `data-ds-dark-theme`. Every
+   * alias the palette repaints between schemes must therefore be restated
+   * here, or it keeps its light value — white pills, white cards, and
+   * yellow-on-white labels on the black canvas. The values below are the dark
+   * palette's own, so the black scheme this theme claims is the scheme it
+   * actually gets. */
+  --dsw-alias-bg-module-platform: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-bg-multi-select: var(--dsw-static-neutral-850);
+  --dsw-alias-bg-skeleton: rgba(255, 255, 255, 0.08);
+  --dsw-alias-bg-mask-1: rgba(0, 0, 0, 0.5);
+  --dsw-alias-bg-mask-2: rgba(0, 0, 0, 0.2);
+  --dsw-alias-bg-mask-drop: rgba(39, 39, 48, 0.7);
+  --dsw-alias-button-elevated-fill: var(--dsw-static-neutral-bluish-750);
+  --dsw-alias-button-floating-fill: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-button-floating-hover: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-button-contrast-fill: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-button-ghost-active-fill: var(--dsw-static-neutral-bluish-750);
+  --dsw-alias-button-ghost-active-hover: var(--dsw-static-neutral-bluish-700);
+  --dsw-alias-button-ghost-active-border: var(--dsw-static-neutral-bluish-600);
+  --dsw-alias-button-info-hover: var(--dsw-static-deepseek-500);
+  --dsw-alias-interactive-bg-hover: rgba(255, 255, 255, 0.08);
+  --dsw-alias-interactive-bg-hover-accent: rgba(255, 255, 255, 0.24);
+  --dsw-alias-interactive-bg-hover-danger: rgba(242, 90, 90, 0.15);
+  --dsw-alias-interactive-bg-hover-solid: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-interactive-bg-active: rgba(255, 255, 255, 0.14);
+  --dsw-alias-markdown-code-block: var(--dsw-static-neutral-bluish-900);
+  --dsw-alias-markdown-code-block-banner: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-markdown-code-segment-selected: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-markdown-code-segment-unselected: var(--dsw-static-neutral-bluish-900);
+  --dsw-alias-markdown-inline-code: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-markdown-citation: var(--dsw-static-neutral-bluish-800);
+  --dsw-alias-markdown-placeholder: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-markdown-tag: var(--dsw-static-neutral-bluish-850);
+  --dsw-alias-scrollbar-bg-l1: var(--dsw-static-neutral-700);
+  --dsw-alias-scrollbar-bg-l2: var(--dsw-static-neutral-600);
+  --dsw-alias-scrollbar-hover-l1: var(--dsw-static-neutral-600);
+  --dsw-alias-scrollbar-hover-l2: var(--dsw-static-neutral-550);
+  --dsw-alias-border-inverted: rgba(255, 255, 255, 0.06);
+  --dsw-alias-border-inverted2: rgba(255, 255, 255, 0.08);
+  --dsw-alias-border-l2-darkmode-thin: rgba(255, 255, 255, 0.06);
+  --dsw-alias-brand-primary-invert: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-brand-primary-new-colorprimary-new-color: var(--dsw-static-deepseek-450);
+  --dsw-alias-brand-text: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-label-primary-bluish: var(--dsw-static-neutral-bluish-50);
+  --dsw-alias-state-business-primary: var(--dsw-static-deepseek-400);
+  --dsw-alias-state-business-tertiary: var(--dsw-static-deepseek-800);
+  --dsw-alias-state-success-tertiary: var(--dsw-static-green-900);
+  --dsw-alias-state-warn-tertiary: var(--dsw-static-amber-900);
+  --dsw-alias-toast-bg: var(--dsw-static-neutral-bluish-750);
+  --dsw-alias-tooltip-bg: var(--dsw-static-neutral-bluish-750);
+  --dsw-specific-tip: var(--dsw-alias-bg-layer-3);
+  --dsw-specific-sidebar-nav-item-active-accent: var(--dsw-static-neutral-bluish-800);
+}
+
+:root[data-dsh-a11y-contrast='daltonism'] body {
+  --dsw-alias-state-error-primary: #d55e00;
+  --dsw-alias-state-success-primary: #009e73;
+  --dsw-alias-state-warn-primary: #e69f00;
+  --dsw-alias-button-info-fill: #0072b2;
+  --dsw-alias-label-primary-inverted: #ffffff;
+}
+
+/* Arrow-key voice navigation: the focused item glows while voiceArrow is on. */
+[data-voice-arrow-active='true'] {
+  outline: 2px solid var(--dsw-alias-state-business-primary, #4a90e2) !important;
+  outline-offset: 2px !important;
+  border-radius: 6px;
+}

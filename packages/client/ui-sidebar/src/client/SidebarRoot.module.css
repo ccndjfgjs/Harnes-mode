@@ -190,10 +190,19 @@
   background: transparent;
   cursor: pointer;
   color: var(--dsw-alias-label-secondary);
+  transition:
+    background-color var(--dsh-motion-fast) var(--dsh-ease-standard),
+    color var(--dsh-motion-fast) var(--dsh-ease-standard),
+    transform var(--dsh-motion-fast) var(--dsh-ease-standard);
 }
 
 .iconButton:hover {
   background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.iconButton:active {
+  transform: scale(0.92);
 }
 
 .collapsed .iconButton {
@@ -256,7 +265,11 @@
   padding: 8px 16px;
   margin: 0 2px 8px;
   box-sizing: border-box;
-  border: 0.5px solid var(--dsw-alias-border-l3);
+  /* The hairline rides the elevation shadow instead of a layout border — the
+     same contract the composer card uses. The outline costs no box, so hover
+     can deepen the shadow without nudging the row below it. */
+  border: 0;
+  --dsw-elevation-stroke-color: var(--dsw-alias-border-l3);
   border-radius: 12px;
   background: var(--dsw-alias-button-elevated-fill);
   color: var(--dsw-alias-label-primary);
@@ -265,10 +278,22 @@
   line-height: 22px;
   cursor: pointer;
   overflow: hidden;
+  box-shadow: var(--dsw-elevation-panel);
+  transition:
+    background-color var(--dsh-motion-fast) var(--dsh-ease-standard),
+    box-shadow var(--dsh-motion-base) var(--dsh-ease-standard),
+    transform var(--dsh-motion-fast) var(--dsh-ease-standard);
 }
 
 .newSession:hover {
   background: var(--dsw-alias-button-floating-hover);
+  box-shadow: var(--dsw-elevation-prominent);
+  transform: translateY(-0.5px);
+}
+
+.newSession:active {
+  box-shadow: var(--dsw-elevation-soft);
+  transform: translateY(0) scale(0.985);
 }
 
 .collapsed .newSession {
@@ -280,6 +305,7 @@
   gap: 0;
   border-color: transparent;
   background: transparent;
+  box-shadow: none;
 }
 
 .collapsed .newSession:hover {
@@ -355,5 +381,17 @@
   .railIn .regionArea {
     transition: none;
     animation: none;
+  }
+
+  /* The hover and press feedback this sheet adds is motion too. */
+  .iconButton,
+  .newSession {
+    transition: none;
+  }
+
+  .iconButton:active,
+  .newSession:hover,
+  .newSession:active {
+    transform: none;
   }
 }

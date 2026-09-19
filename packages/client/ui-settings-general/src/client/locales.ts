@@ -19,6 +19,22 @@ export const zh = {
 /** The settings namespace key union. */
 export type SettingsKey = keyof typeof zh
 
+/** Russian dictionary, checked complete against the zh key set. */
+export const ru = {
+  'trigger': 'Настройки',
+  'title': 'Настройки',
+  'close': 'Закрыть',
+  'openDocument': 'Открыть файл конфигурации',
+  'openDocument.error': 'Не удалось открыть файл конфигурации',
+  'general.nav': 'Общие',
+  'connection.error': 'Нет соединения',
+  'connection.retry': 'Переподключиться',
+  'connection.connecting': 'Подключение…',
+  'connection.connected': 'Подключено',
+  'connection.reconnect': 'Нет соединения, нажмите чтобы переподключиться',
+  'connection.restart': 'Идёт подключение, нажмите чтобы переподключиться',
+} satisfies Record<SettingsKey, string>
+
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
   'trigger': 'Settings',

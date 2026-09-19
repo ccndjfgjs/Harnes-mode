@@ -1,0 +1,44 @@
+appId: ai.deepseek.harness
+productName: DeepSeek Harness
+copyright: Copyright © 2026 DeepSeek Harness
+asar: true
+compression: maximum
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+directories:
+  output: installer/releases
+  buildResources: installer/resources
+files:
+  - electron/**/*
+  - apps/web/dist/**/*
+  - packages/**/lib/**/*
+  - apps/cli/**/*
+  - node_modules/**/*
+  - package.json
+extraResources:
+  - from: installer/resources/v2ray
+    to: v2ray
+    filter:
+      - v2ray.exe
+      - geoip.dat
+      - geosite.dat
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: electron/icon.png
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  installerLanguages: [ru, en]
+mac:
+  category: public.app-category.productivity
+  icon: electron/icon.png
+linux:
+  category: Development
+  target: [AppImage]

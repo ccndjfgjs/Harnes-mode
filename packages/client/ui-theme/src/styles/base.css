@@ -2,14 +2,62 @@
  * upstream (deepsuite theme/global.css) — supplied here so the composite
  * --dsw-font-* variables resolve and motion rides the upstream curve. Code
  * font stack deliberately omits a bare `monospace` tail (Windows CJK falls
- * back to SimSun otherwise). */
+ * back to SimSun otherwise).
+ *
+ * This sheet is also the single source of truth for the two rhythm systems
+ * every surface composes from:
+ *
+ *   --dsh-motion-*  time + easing. One standard curve, one decelerate curve
+ *                   for entrances, one emphasized curve for large surface
+ *                   moves, and a spring for small confirmations. The legacy
+ *                   --ds-transition-* / --ds-ease-in-out names are re-pointed
+ *                   at these values, so every existing consumer (AppFrame's
+ *                   column tracks, the sidebar rail, the composer) inherits
+ *                   the smoother feel without a rule change.
+ *
+ *   --dsh-space-*   a 4px-based scale. Surfaces pick the step that matches
+ *                   their density instead of writing literals, which is what
+ *                   keeps the vertical rhythm even across the shell. */
 :root {
   --dsw-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --ds-font-family-code: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
     'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
-  --ds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --ds-transition-duration: 0.2s;
-  --ds-transition-duration-fast: 0.1s;
-  --ds-transition-duration-slow: 0.3s;
+
+  /* Motion: time. Named by weight, not by property, so a surface picks a
+     duration by how much of the screen it moves. */
+  --dsh-motion-instant: 80ms;
+  --dsh-motion-fast: 120ms;
+  --dsh-motion-base: 180ms;
+  --dsh-motion-slow: 280ms;
+  --dsh-motion-slower: 420ms;
+
+  /* Motion: easing. `standard` for hover/press feedback, `decelerate` for
+     entrances (fast in, settle out), `emphasized` for large surface moves
+     that should feel weighted, `spring` for small confirmations that may
+     overshoot a hair. */
+  --dsh-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dsh-ease-decelerate: cubic-bezier(0, 0, 0, 1);
+  --dsh-ease-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --dsh-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --dsh-ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* Spacing rhythm: a 4px base. `1`..`10` are the steps the shell uses;
+     the scale is intentionally small so ad-hoc values stay rare. */
+  --dsh-space-1: 4px;
+  --dsh-space-2: 8px;
+  --dsh-space-3: 12px;
+  --dsh-space-4: 16px;
+  --dsh-space-5: 20px;
+  --dsh-space-6: 24px;
+  --dsh-space-8: 32px;
+  --dsh-space-10: 40px;
+
+  /* Legacy motion names. Kept as indirections rather than deleted so the
+     vendored sheets and every component rule that already reads them move to
+     the new curves in one step. */
+  --ds-ease-in-out: var(--dsh-ease-standard);
+  --ds-transition-duration: var(--dsh-motion-base);
+  --ds-transition-duration-fast: var(--dsh-motion-fast);
+  --ds-transition-duration-slow: var(--dsh-motion-slow);
 }

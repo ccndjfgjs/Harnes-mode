@@ -27,6 +27,8 @@ import type {
   SubmitOutcome, TokenSpan,
 } from '../contract/input.ts'
 import type { InputSubmitMode } from '../contract/composer-submission.ts'
+import { playSendTone } from '../skeleton/audio-feedback.ts'
+import { isSoundEnabled } from '../skeleton/media-service.ts'
 import { SubmitMachine } from './machine.ts'
 import { ReferenceChipNode, $createReferenceChipNode } from './editor/chip-node.tsx'
 import { refreshClaimDecoration, registerClaimDecoration } from './editor/claim-decor.ts'
@@ -67,6 +69,14 @@ export interface SessionInputDeps {
     mode: InputSubmitMode,
     signal: AbortSignal,
   ): Promise<SubmitOutcome>
+  /**
+   * Register a waiter for this session's next **live** answer (see
+   * {@link InputActions.awaitAnswer}). A THUNK like the other lazy faces: the
+   * shell is built during scope materialization, where the conversation
+   * binding is not queryable yet, so resolution defers to the first caller.
+   * @returns the registrar, or undefined while the conversation service is absent.
+   */
+  awaitAnswer?: (() => ((listener: (text: string) => void) => () => void) | undefined) | undefined
   /** Command-plane image plumbing (the hub owns the conversation face and the copy). */
   commandImages: {
     /** Resolve ordered draft ids to wire payloads without sending them; rejects when an id no longer resolves. */
@@ -139,6 +149,8 @@ export class SessionInputShell implements SessionInput {
     removeImage: (id) => { this.removeImage(id) },
     pruneImages: (ids) => { this.pruneImages(ids) },
     submit: () => { this.submit('queue') },
+    restructureDraft: (text, signal) => this.restructureDraft(text, signal),
+    awaitAnswer: signal => this.awaitAnswer(signal),
   }
 
   private readonly core = new SubmitMachine()
@@ -169,6 +181,12 @@ export class SessionInputShell implements SessionInput {
     readonly controller: AbortController
     readonly imageIds: readonly DraftAttachmentId[]
   }>()
+  /**
+   * Live answer waits in flight, each as the abort trigger that settles it.
+   * Disposal fires them, because a dead scope will never deliver an answer
+   * and a wait that never settles is a leak the caller cannot observe.
+   */
+  private readonly answerWatchers = new Set<() => void>()
 
   constructor(private readonly deps: SessionInputDeps) {
     this.editor = createEditor({
@@ -281,6 +299,65 @@ export class SessionInputShell implements SessionInput {
     }, { discrete: true, tag: HISTORY_MERGE_TAG })
   }
 
+  /**
+   * Hand one draft to the model and answer with replacement text. This is a
+   * transformation, not a send: nothing enters the conversation, no attempt
+   * is opened, and the draft itself is untouched — so a refusal, a cancel, or
+   * an empty answer leaves exactly what the user typed, and the caller alone
+   * decides whether to install the result.
+   * @param text - the draft to restructure.
+   * @param signal - cancels the model call.
+   * @returns the replacement draft.
+   * @throws {Error} when the Host refuses or the model fails.
+   */
+  async restructureDraft(text: string, signal?: AbortSignal): Promise<string> {
+    const result = await this.deps.actx.remote.session.restructureDraft({ text }, signal)
+    if (!result.ok) throw new Error(result.error.message)
+    return result.value.text
+  }
+
+  /**
+   * Wait for the answer to the turn that is about to run (see
+   * {@link InputActions.awaitAnswer}). The distinction between a fresh answer
+   * and a replayed one is owned by the assembly layer — this method only
+   * bridges that waiter into a promise the caller can await.
+   *
+   * The wait ends on three outcomes, and only the first is an answer: the live
+   * `assistant/message` arrives, the caller aborts, or the facade is disposed
+   * (its scope died, so nothing will ever arrive). A turn that ends without a
+   * message therefore rejects rather than hanging.
+   * @param signal - aborts the wait.
+   * @returns the answer text, trimmed.
+   * @throws {Error} when the turn ends without an answer, the wait is aborted,
+   * or no conversation binding can serve the wait.
+   */
+  awaitAnswer(signal: AbortSignal): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      if (signal.aborted) {
+        reject(new Error('conversation.awaitAnswer: aborted before the answer arrived'))
+        return
+      }
+      const register = this.deps.awaitAnswer?.()
+      if (register === undefined) {
+        reject(new Error('conversation.awaitAnswer: no conversation binding for this session'))
+        return
+      }
+      let off: (() => void) | undefined
+      const settle = (fn: () => void): void => {
+        off?.()
+        off = undefined
+        signal.removeEventListener('abort', onAbort)
+        this.answerWatchers.delete(abort)
+        fn()
+      }
+      const onAbort = (): void => { settle(() => { reject(new Error('conversation.awaitAnswer: aborted')) }) }
+      const abort = (): void => { onAbort() }
+      signal.addEventListener('abort', onAbort)
+      this.answerWatchers.add(abort)
+      off = register((text) => { settle(() => { resolve(text) }) })
+    })
+  }
+
   /** Append ordered image ids unless an admission transaction is locked. */
   addImages(ids: readonly DraftAttachmentId[]): boolean {
     if (this.snapshot.phase === 'adjudicating' || this.snapshot.phase === 'submitting') return false
@@ -365,6 +442,7 @@ export class SessionInputShell implements SessionInput {
         this.imageFlightSeq += 1
         const flight = this.imageFlightSeq
         this.imageFlights.set(flight, { controller, imageIds })
+        if (isSoundEnabled()) playSendTone()
         this.commitSend(imageIds)
         void this.deps.defaultSink('', imageIds, mode, controller.signal).then((outcome) => {
           if (this.disposed || !this.imageFlights.delete(flight)) return
@@ -577,6 +655,9 @@ export class SessionInputShell implements SessionInput {
       flight.controller.abort()
     }
     this.disposed = true
+    // Release live answer waits BEFORE the machine teardown: a waiter parked
+    // on a session that is going away must not outlive its scope.
+    for (const abort of [...this.answerWatchers]) abort()
     this.dispatchRun(({ type: 'release' }))
     this.unregister()
     this.editor.setRootElement(null)
@@ -640,10 +721,14 @@ export class SessionInputShell implements SessionInput {
         return
       }
       case 'begin-submit': {
+        // An accepted claim send: the draft left the composer.
+        if (isSoundEnabled()) playSendTone()
         this.beginSubmit(fx.attempt, fx.claim, fx.args)
         return
       }
       case 'default-sink': {
+        // An accepted ordinary send: the draft left the composer.
+        if (isSoundEnabled()) playSendTone()
         this.sinkSerialized(fx.attempt, fx.draft, fx.mode)
         return
       }

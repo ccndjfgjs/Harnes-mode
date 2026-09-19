@@ -1,0 +1,129 @@
+/* Customization page: stacked option cards in the section column. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+}
+
+.description {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-specific-input-major);
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+}
+
+.option input {
+  accent-color: var(--dsw-alias-state-business-primary);
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  corner-shape: round;
+  flex: none;
+}
+
+.swatchBlue { background: #3964fe; }
+.swatchGreen { background: #22a06b; }
+.swatchPurple { background: #8b5cf6; }
+.swatchOrange { background: #f59e0b; }
+
+/* Font-size control: stepper pill + unit label mirroring the General
+   font-size row geometry. Unlike that row the arrows stay always visible:
+   inside a settings card there is no hover-only discovery budget, and the
+   buttons remain in tab order either way. */
+.control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 72px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 18px;
+  background: var(--dsw-alias-bg-module-platform);
+}
+
+.value {
+  min-width: 18px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-primary);
+}
+
+.unit {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.arrows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 75%, transparent);
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+}
+
+.arrow:hover:not(:disabled) {
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.arrow:disabled {
+  color: var(--dsw-alias-label-caption);
+  cursor: default;
+}
+

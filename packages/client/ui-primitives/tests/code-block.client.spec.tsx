@@ -127,6 +127,26 @@ describe('CodeBlock', () => {
     expect(await screen.findByRole('button', { name: '复制成功' })).toBeTruthy()
   })
 
+  it('names the region when a code label is given, and renders none without one', () => {
+    const named = render(<CodeBlock code={'const a = 1\n'} lang="ts" codeLabel="ts code, 1 line" />)
+    expect(named.getByRole('region', { name: 'ts code, 1 line' }).className).toContain('md-code-block')
+    named.unmount()
+    const plain = render(<CodeBlock code={'const a = 1\n'} lang="ts" />)
+    expect(plain.queryByRole('region')).toBeNull()
+  })
+
+  it('reads the fence aloud through onSpeak without touching the clipboard', () => {
+    const onSpeak = vi.fn()
+    render(<CodeBlock code={'const a = 1\nconst b = 2\n'} lang="ts" speakLabel="Read aloud" onSpeak={onSpeak} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Read aloud' }))
+    expect(onSpeak).toHaveBeenCalledWith(['const a = 1', 'const b = 2'])
+  })
+
+  it('hides the speak button without a handler', () => {
+    render(<CodeBlock code={'const a = 1\n'} speakLabel="Read aloud" />)
+    expect(screen.queryByRole('button', { name: 'Read aloud' })).toBeNull()
+  })
+
   it('does not claim success when execCommand throws or is absent', async () => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,

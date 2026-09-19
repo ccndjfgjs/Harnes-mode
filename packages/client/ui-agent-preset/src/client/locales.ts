@@ -82,6 +82,69 @@ export const en: Record<AgentPresetSettingsKey, string> = {
   deleting: 'Deleting…',
 }
 
+/** Russian copy. */
+export const ru: Record<AgentPresetSettingsKey, string> = {
+  error: 'Не удалось загрузить пресеты агентов.',
+  userTrust: 'Свой',
+  seatHint: 'Пресет агента для сессии, которую вы собираетесь начать',
+  headerHint: 'Пресет, на котором работает сессия, зафиксирован при старте',
+  nav: 'Пресеты агентов',
+  sectionIntro:
+    'Пресет — это сборка плагинов, на которой работает агент одной сессии: его инструменты, промпт и возможности. '
+    + 'Скопируйте существующий и сделайте своим, или поручите агенту черновик в режиме Creator.',
+  builtIn: 'Встроенные',
+  setDefault: 'Сделать по умолчанию',
+  view: 'Просмотр',
+  presetStandardName: 'Стандартный режим',
+  presetStandardDescription:
+    'Полноценный агент для кода: редактирование файлов, shell, поиск по файлам и вебу, навыки, планирование, цели, суб-агенты и рабочие процессы.',
+  presetPtcName: 'Режим PTC',
+  presetPtcDescription:
+    'Полноценный агент для кода без инструмента workflow; остальные инструменты доступны через PTC SDK, чтобы модель могла объединять многошаговые операции в одной TypeScript-программе.',
+  presetMinimalName: 'Минимальный режим',
+  presetMinimalDescription:
+    'Агент для кода с двумя инструментами: постоянный bash и str_replace_editor.',
+  presetCordisName: 'Режим Creator',
+  presetCordisDescription:
+    'Для создания собственных пресетов агентов: все возможности стандартного режима плюс инспекция рантайма, эксперименты с плагинами и помощь в авторстве пресетов.',
+  duplicate: 'Дублировать',
+  duplicateUnavailable: 'В этом развёртывании нет папки для записи пресетов',
+  delete: 'Удалить',
+  presetId: 'Идентификатор',
+  presetIdPlaceholder: 'my-agent',
+  displayName: 'Название',
+  displayNamePlaceholder: 'Показывается в выборе; по умолчанию — идентификатор',
+  inUse: 'Используется',
+  builtInGroup: 'Встроенные',
+  customGroup: 'Свои',
+  noDescription: 'Нет описания.',
+  brokenBadge: 'Ошибка загрузки',
+  brokenNoCopy: 'Пресет с ошибкой загрузки нельзя дублировать',
+  switchRefused: 'Не удалось переключиться на «{name}»: {reason}',
+  copyOf: 'Скопировано из',
+  composition: 'Сборка (agent.cordis.yml)',
+  cancel: 'Отмена',
+  close: 'Закрыть',
+  retry: 'Повторить',
+  copyTitle: 'Дублировать пресет',
+  copyIntro:
+    'Весь пресет копируется на этом компьютере. Идентификатор станет именем папки и позже не меняется; остальное правится в собственных файлах пресета.',
+  create: 'Создать',
+  creating: 'Создание…',
+  creatorDraft: 'Создать свой пресет в режиме Creator',
+  openLocation: 'Открыть папку',
+  showLocation: 'Показать путь',
+  revealedPathLabel: 'Файлы пресета:',
+  idRequired: 'Укажите идентификатор.',
+  idInvalid: 'Только строчные буквы, цифры и дефисы, начиная с буквы или цифры.',
+  idTaken: 'Пресет с таким идентификатором уже есть.',
+  deleteTitle: 'Удалить этот пресет?',
+  deleteDescription:
+    'Папка пресета будет удалена. Уже запущенные на нём сессии продолжат работать; новые сессии не смогут его выбрать.',
+  deleteConfirm: 'Удалить',
+  deleting: 'Удаление…',
+}
+
 /** Simplified Chinese copy. */
 export const zh: Record<AgentPresetSettingsKey, string> = {
   error: '无法加载 Agent 预设。',

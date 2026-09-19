@@ -217,6 +217,21 @@ export interface SessionInputResolver {
  * component: stable-identity void callbacks, mirroring the
  * useStore+actions convention. Command-style handles (arbitrate/space/
  * paste/…) stay InputBar-private and never ride this face.
+ *
+ * `restructureDraft` is the one async member: it hands the draft to the model
+ * and answers with replacement text, without touching the submit plane. The
+ * caller decides whether to install the answer, so a refusal or a cancelled
+ * call leaves the draft exactly as the user typed it.
+ *
+ * `awaitAnswer` is the second async member, and it exists for one reason:
+ * **only the live event feed can tell a fresh answer from a replayed one.**
+ * An answer's text is drawn in the turn tail (`ui-chat`), but that node is
+ * built from the log *after* the turn ends, so it appears identically when a
+ * session is reopened — wiring a reader there would make opening an old
+ * conversation read every past answer aloud. The distinction lives here, in
+ * the assembly layer, where `append` is the live tail and `prepend`/`replace`
+ * are history. A caller that must react to *this* answer, not to the archive,
+ * waits on this seam instead of watching the transcript.
  */
 export interface InputActions {
   /** Replace the whole draft (persisted-draft seed and programmatic writes). */
@@ -229,6 +244,31 @@ export interface InputActions {
   pruneImages(ids: readonly DraftAttachmentId[]): void
   /** Enter submission (adjudication / claim transaction / default sink inside). */
   submit(): void
+  /**
+   * Ask the model to restructure one draft, returning replacement text. This
+   * is a transformation, not a send: nothing enters the conversation, and the
+   * caller installs the answer itself.
+   * @param text - the draft to restructure.
+   * @param signal - cancels the call.
+   * @returns the replacement draft.
+   * @throws {Error} when no model answers.
+   */
+  restructureDraft(text: string, signal?: AbortSignal): Promise<string>
+  /**
+   * Wait for the answer to the turn that is about to run.
+   *
+   * Resolves with the assistant's text **only** when that answer arrives on
+   * the live feed. Replayed history never resolves it: opening an old session,
+   * scrolling back, or switching chats cannot make this promise settle, so a
+   * caller that speaks what it receives stays silent through a reconstruction.
+   *
+   * Call it *before* {@link submit}, because the answer is only live once.
+   * A second wait for the same turn will not settle — the live feed moves on.
+   * @param signal - aborts the wait; the caller stops caring.
+   * @returns the answer text, trimmed; rejects when the turn produces none.
+   * @throws {Error} when the turn ends without an answer, or the wait is aborted.
+   */
+  awaitAnswer(signal: AbortSignal): Promise<string>
 }
 
 /** One surfaced notice (command results, adjudication failures). seq keys re-render of repeats. */

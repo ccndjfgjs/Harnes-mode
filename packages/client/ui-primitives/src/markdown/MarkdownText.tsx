@@ -30,6 +30,7 @@ function renderSettled(
   text: string,
   labels: MarkdownLabels,
   fileMentions: MarkdownFileMentions | undefined,
+  onSpeakCode: ((lines: readonly string[]) => void) | undefined,
 ): ReactNode[] {
   const root = parseGfmWithMath(text)
   const targets = createReferenceTargets()
@@ -38,6 +39,7 @@ function renderSettled(
     streaming: false,
     labels,
     fileMentions,
+    onSpeakCode,
     targets,
     footnoteOrder: [],
     footnoteCounts: new Map(),
@@ -71,8 +73,14 @@ class StreamingRenderer {
   private lastText: string | null = null
   private lastRendered: ReactNode[] = []
 
-  /** @param labels - Localized Markdown chrome baked into cached elements; the owner replaces the renderer when it changes. */
-  constructor(private readonly labels: MarkdownLabels) {}
+  /**
+   * @param labels - Localized Markdown chrome baked into cached elements; the owner replaces the renderer when it changes.
+   * @param onSpeakCode - Fence read-aloud handler; module-stable so cached elements never go stale.
+   */
+  constructor(
+    private readonly labels: MarkdownLabels,
+    private readonly onSpeakCode: ((lines: readonly string[]) => void) | undefined,
+  ) {}
 
   /**
    * Render the current accumulated text. Idempotent per text value, so React
@@ -106,6 +114,7 @@ class StreamingRenderer {
         streaming: true,
         labels: this.labels,
         fileMentions: undefined,
+        onSpeakCode: this.onSpeakCode,
         targets: frameTargets,
         footnoteOrder: this.frozenFootnoteOrder,
         footnoteCounts: this.frozenFootnoteCounts,
@@ -124,6 +133,7 @@ class StreamingRenderer {
       streaming: true,
       labels: this.labels,
       fileMentions: undefined,
+      onSpeakCode: this.onSpeakCode,
       targets: frameTargets,
       footnoteOrder: [...this.frozenFootnoteOrder],
       footnoteCounts: new Map(this.frozenFootnoteCounts),
@@ -158,24 +168,26 @@ class StreamingRenderer {
  * relative links, and unsafe protocols are disabled, while absolute HTTP(S)
  * images render directly.
  */
-export const MarkdownText = memo(function MarkdownText({ text, streaming = false, labels, fileMentions }: {
+export const MarkdownText = memo(function MarkdownText({ text, streaming = false, labels, fileMentions, onSpeakCode }: {
   text: string
   streaming?: boolean
   labels: MarkdownLabels
   fileMentions?: MarkdownFileMentions | undefined
+  /** Fence read-aloud handler; keep module-stable so frozen streaming elements never go stale. */
+  onSpeakCode?: ((lines: readonly string[]) => void) | undefined
 }) {
   const streamRef = useRef<StreamingRenderer | null>(null)
   const streamLabelsRef = useRef<MarkdownLabels>(labels)
   const children = useMemo(() => {
     if (!streaming) {
       streamRef.current = null
-      return renderSettled(text, labels, fileMentions)
+      return renderSettled(text, labels, fileMentions, onSpeakCode)
     }
     if (streamRef.current === null || streamLabelsRef.current !== labels) {
-      streamRef.current = new StreamingRenderer(labels)
+      streamRef.current = new StreamingRenderer(labels, onSpeakCode)
       streamLabelsRef.current = labels
     }
     return streamRef.current.render(text)
-  }, [text, streaming, labels, fileMentions])
+  }, [text, streaming, labels, fileMentions, onSpeakCode])
   return <div className={css.markdown}>{children}</div>
 })

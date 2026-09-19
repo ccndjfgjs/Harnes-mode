@@ -10,6 +10,8 @@ import type {
   ConversationViewSnapshotStore,
 } from '../contract/conversation.ts'
 import { conversationContextKey } from '../contract/conversation.ts'
+import { playTurnEndTone } from '../skeleton/audio-feedback.ts'
+import { isSoundEnabled } from '../skeleton/media-service.ts'
 import {
   ConversationLocationIndex, type ConversationLocationDataChange,
 } from './location-index.ts'
@@ -168,6 +170,8 @@ export class ConversationNodeAssembler implements ConversationViewSnapshotStore 
   private readonly dependents = new Map<string, Set<InternalContext>>()
   private readonly views = new Map<string, ViewState>()
   private readonly activeTargets = new Set<string>()
+  /** Listeners waiting for the answer to a turn that has not been answered yet. */
+  private readonly answerWaiters = new Set<(text: string) => void>()
   private hasMore = false
   private replacePending = true
   private timelineDirty = true
@@ -220,6 +224,10 @@ export class ConversationNodeAssembler implements ConversationViewSnapshotStore 
   append(record: SessionLiveEventEntry): ConversationPublication {
     const event = record.event
     if (this.inputs.has(event.seq)) return 'none'
+    // Live-tail turn outcomes chime once: history (pre)loads replay through
+    // prepend/replaceWindow and stay silent by construction.
+    if (event.type === 'turn/end' && isSoundEnabled()) playTurnEndTone(event.data.reason.kind)
+    this.settleAnswer(event)
     this.revised.clear()
     this.inputs.set(event.seq, record)
     let publication: ConversationPublication = 'none'
@@ -239,6 +247,51 @@ export class ConversationNodeAssembler implements ConversationViewSnapshotStore 
     if (this.replayRevisedDependents()) publication = 'immediate'
     this.revised.clear()
     return publication
+  }
+
+  /**
+   * Wait for the answer to the next live turn.
+   *
+   * This is the only honest way to react to *this* answer rather than to the
+   * transcript: {@link append} is the live tail, while `prepend` and
+   * `replaceWindow` replay history. A waiter therefore settles when a fresh
+   * `assistant/message` arrives, and never when an old session is re-read —
+   * which is what keeps a reader of answers (text-to-speech) quiet through a
+   * reconstruction.
+   *
+   * Register before submitting: the answer is live exactly once.
+   * @param listener - called with the answer text of the next live message.
+   * @returns deregistration for the waiter.
+   */
+  awaitAnswer(listener: (text: string) => void): () => void {
+    this.answerWaiters.add(listener)
+    return () => { this.answerWaiters.delete(listener) }
+  }
+
+  /**
+   * Resolve every pending waiter when a live assistant message lands.
+   *
+   * Only the live path calls this. The text is flattened to what a voice can
+   * read: text blocks in order, joined by blank lines, with non-text blocks
+   * (reasoning, tool calls) dropped rather than spoken as their own syntax.
+   * @param event - the just-appended live event.
+   */
+  private settleAnswer(event: SessionLiveEventEntry['event']): void {
+    if (event.type !== 'assistant/message') return
+    if (this.answerWaiters.size === 0) return
+    // Merge-extensible block union: switch on the tag and fall through the
+    // rest rather than asserting a shape (the union widens as plugins add
+    // blocks, so a cast would silently mis-read a future block as text).
+    const spoken: string[] = []
+    for (const block of event.data.message.content) {
+      if (block.type === 'text') spoken.push(block.text)
+    }
+    const text = spoken.join('\n\n').trim()
+    if (text === '') return
+    for (const listener of [...this.answerWaiters]) {
+      this.answerWaiters.delete(listener)
+      listener(text)
+    }
   }
 
   /**

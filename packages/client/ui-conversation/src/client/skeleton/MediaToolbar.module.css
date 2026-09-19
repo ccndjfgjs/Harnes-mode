@@ -1,0 +1,124 @@
+/* Composer media controls: three icon buttons matching the InputBar tool row.
+   Geometry mirrors .add (28px circle, selector fill, primary glyph); the
+   active seat borrows the business-primary ink so recording/calling/sharing
+   read as engaged without inventing a new control shape. */
+
+.toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 999px;
+  corner-shape: round;
+  background: var(--dsw-specific-selector);
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btnActive {
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+}
+
+.btnActive:hover:not(:disabled) {
+  background: var(--dsw-alias-state-business-primary);
+}
+
+.recording {
+  animation: media-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes media-pulse {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+.notice {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Screen broadcast preview: a small floating window holding the latest
+   sampled frame, with its own stop control so the broadcast can be ended
+   from the picture itself. Anchored to a corner chosen in Screen Broadcast
+   settings; the fixed position keeps it clear of the composer. */
+.preview {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 10px;
+  corner-shape: round;
+  background: var(--dsw-specific-input-major);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+}
+
+.corner-top-left {
+  top: 16px;
+  left: 16px;
+}
+
+.corner-top-right {
+  top: 16px;
+  right: 16px;
+}
+
+.corner-bottom-left {
+  bottom: 16px;
+  left: 16px;
+}
+
+.corner-bottom-right {
+  bottom: 16px;
+  right: 16px;
+}
+
+.previewFrame {
+  display: block;
+  width: 240px;
+  height: auto;
+  border-radius: 6px;
+  corner-shape: round;
+  background: var(--dsw-specific-selector);
+}
+
+.previewStop {
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  corner-shape: round;
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recording {
+    animation: none;
+  }
+}

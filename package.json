@@ -3,6 +3,7 @@
   "version": "0.1.2-rc.1",
   "license": "MIT",
   "private": true,
+  "main": "electron/main.js",
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "engines": {
@@ -156,7 +157,14 @@
     "demo:inspector": "node --import tsx/esm apps/cli/src/bin.ts web --patch ./packages/experimental/inspector/cordis.source.patch.yml",
     "mock:llm": "node --import tsx packages/test-support/llm-mock-server/src/bin.ts",
     "dev:web": "tsx scripts/dev-web.ts --poll",
-    "postinstall": "node scripts/install-lefthook.mjs"
+    "postinstall": "node scripts/install-lefthook.mjs && node scripts/ensure-v2ray-core.mjs",
+    "electron:package": "node scripts/ensure-v2ray-core.mjs --required && pnpm run build && pnpm --filter @deepseek-ai/dsh-web-frontend build && electron-builder --config electron-builder.yml",
+    "electron:installer": "pnpm run electron:package",
+    "setup:v2ray-core": "node scripts/setup-v2ray-core.mjs",
+    "remove:v2ray-core": "node scripts/remove-v2ray-core.mjs",
+    "ensure:v2ray-core": "node scripts/ensure-v2ray-core.mjs",
+    "test:launcher": "node --test electron/tests/*.test.js",
+    "test:scripts": "node --test scripts/tests/*.test.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-tool-session-query": "workspace:^",
@@ -173,6 +181,7 @@
     "@yao-pkg/pkg": "6.21.0",
     "@yarnpkg/cli-dist": "4.17.1",
     "eslint-plugin-sonarjs": "^4.1.0",
+    "electron": "44.2.0",
     "execa": "^10.0.0",
     "fast-check": "^4.8.0",
     "istanbul-lib-report": "^3.0.1",
@@ -195,5 +204,8 @@
     "typescript": "^6.0.3",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "portfinder": "^1.0.38"
   }
 }

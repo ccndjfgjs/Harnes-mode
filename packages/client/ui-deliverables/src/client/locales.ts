@@ -21,5 +21,14 @@ export const en: Record<DeliverablesKey, string> = {
   'produced.showInFolder': 'Show in folder',
 }
 
+/** Russian dictionary (same key set). */
+export const ru: Record<DeliverablesKey, string> = {
+  'produced.label': 'Создано',
+  'produced.moreOne': '+ 1 файл',
+  'produced.more': '+ файлов: {count}',
+  'produced.open': 'Открыть {name}',
+  'produced.showInFolder': 'Показать в папке',
+}
+
 /** Union of this namespace's dictionary keys. */
 export type DeliverablesKey = keyof typeof zh

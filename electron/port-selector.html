@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeepSeek Harness</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0d1017;
+  --surface: rgba(25, 29, 41, 0.94);
+  --surface-2: #202536;
+  --surface-3: #282e42;
+  --border: rgba(255,255,255,.09);
+  --text: #f6f8ff;
+  --muted: #98a1b7;
+  --brand: #5686fe;
+  --brand-hover: #6e98ff;
+  --success: #45c77c;
+  --danger: #f06d72;
+  --warning: #f0c86d;
+  --shadow: 0 2px 6px rgba(0,0,0,.28), 0 24px 64px rgba(0,0,0,.44);
+
+  /* Motion + rhythm, mirrored from the app theme (packages/client/ui-theme) so
+     the launcher and the harness it starts feel like one product. */
+  --l-motion-fast: 120ms;
+  --l-motion-base: 180ms;
+  --l-motion-slow: 280ms;
+  --l-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --l-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --l-space-1: 4px;
+  --l-space-2: 8px;
+  --l-space-3: 12px;
+  --l-space-4: 16px;
+  --l-space-5: 20px;
+  --l-space-6: 24px;
+  --l-space-8: 32px;
+  --l-radius-sm: 8px;
+  --l-radius-md: 10px;
+  --l-radius-lg: 14px;
+  --l-radius-xl: 22px;
+}
+* { box-sizing: border-box; }
+html, body { width: 100%; min-height: 100%; margin: 0; }
+body {
+  min-height: 100vh;
+  overflow: auto;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(86,134,254,.16), transparent 35%),
+    linear-gradient(145deg, #111522, var(--bg) 55%);
+  color: var(--text);
+  font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
+}
+button, input, select { font: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+#titlebar {
+  position: fixed; inset: 0 0 auto; height: 38px; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(13,16,23,.84); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(18px); -webkit-app-region: drag; user-select: none;
+}
+body.fullscreen #titlebar { display: none; }
+.titlebar-left { height: 100%; padding-left: var(--l-space-3); display: flex; align-items: center; gap: var(--l-space-2); color: #c4cbda; font-size: 12px; }
+.titlebar-icon, .titlebar-placeholder { width: 18px; height: 18px; border-radius: 5px; object-fit: cover; }
+.titlebar-placeholder { background: linear-gradient(135deg, #7ba2ff, #3e67d7); }
+.titlebar-controls { height: 100%; display: flex; -webkit-app-region: no-drag; }
+.titlebar-btn {
+  width: 46px; border: 0; color: #aab3c7; background: transparent; cursor: pointer;
+  transition: background-color var(--l-motion-fast) var(--l-ease-standard),
+              color var(--l-motion-fast) var(--l-ease-standard);
+}
+.titlebar-btn:hover { background: rgba(255,255,255,.08); color: white; }
+.titlebar-btn:active { background: rgba(255,255,255,.13); }
+#btnClose:hover { background: #dc4b52; }
+.page { min-height: 100vh; padding: 70px var(--l-space-6) var(--l-space-8); display: grid; place-items: center; }
+.dialog {
+  position: relative; width: min(100%, 560px); padding: var(--l-space-8);
+  border: 1px solid var(--border); border-radius: var(--l-radius-xl);
+  background: var(--surface); box-shadow: var(--shadow); backdrop-filter: blur(22px);
+  animation: dialog-in var(--l-motion-slow) var(--l-ease-emphasized) both;
+}
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(10px) scale(.992); }
+}
+.brand { text-align: center; margin-bottom: var(--l-space-6); }
+.brand-logo { width: 78px; height: 78px; margin: 0 auto var(--l-space-3); border-radius: 20px; object-fit: contain; filter: drop-shadow(0 10px 22px rgba(86,134,254,.25)); }
+.brand-placeholder { width: 78px; height: 78px; margin: 0 auto var(--l-space-3); border-radius: 20px; background: linear-gradient(135deg, #7ba2ff, #315ccf); box-shadow: 0 12px 30px rgba(86,134,254,.3); }
+h1 { margin: 0; font-size: 24px; letter-spacing: -.03em; }
+.subtitle { margin: var(--l-space-2) 0 0; color: var(--muted); }
+.section {
+  padding: var(--l-space-4); border: 1px solid var(--border);
+  border-radius: var(--l-radius-lg); background: rgba(255,255,255,.025); margin-top: var(--l-space-3);
+  transition: border-color var(--l-motion-base) var(--l-ease-standard),
+              background-color var(--l-motion-base) var(--l-ease-standard);
+}
+.section:hover { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.035); }
+.section-title { display: flex; justify-content: space-between; align-items: center; gap: var(--l-space-4); }
+.section-title strong { font-size: 14px; }
+.section-description { margin: var(--l-space-1) 0 0; color: var(--muted); font-size: 12px; }
+.section-controls { display: flex; align-items: center; gap: var(--l-space-2); }
+.btn-inline { min-height: 32px; padding: 0 11px; font-size: 12px; white-space: nowrap; }
+.field { display: grid; gap: var(--l-space-2); }
+.field + .field { margin-top: var(--l-space-3); }
+.field label { color: #c5ccdc; font-size: 12px; font-weight: 600; }
+.input, select.input {
+  width: 100%; min-height: 42px; border: 1px solid var(--border); border-radius: var(--l-radius-md);
+  padding: 9px var(--l-space-3); background: var(--surface-2); color: var(--text);
+  transition: border-color var(--l-motion-fast) var(--l-ease-standard),
+              box-shadow var(--l-motion-fast) var(--l-ease-standard);
+}
+.input:hover { border-color: rgba(255,255,255,.16); }
+.input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(86,134,254,.14); outline: none; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--l-space-3); }
+.switch { position: relative; width: 44px; height: 24px; flex: 0 0 auto; }
+.switch input { position: absolute; opacity: 0; }
+.switch span {
+  position: absolute; inset: 0; border-radius: 20px; background: #3b4254; cursor: pointer;
+  transition: background-color var(--l-motion-base) var(--l-ease-emphasized);
+}
+.switch span::after {
+  content: ""; position: absolute; width: 18px; height: 18px; top: 3px; left: 3px;
+  border-radius: 50%; background: white;
+  transition: transform var(--l-motion-base) var(--l-ease-emphasized);
+}
+.switch input:checked + span { background: var(--brand); }
+.switch input:checked + span::after { transform: translateX(20px); }
+.switch input:disabled + span { opacity: .45; cursor: not-allowed; }
+#proxyFields { margin-top: var(--l-space-4); padding-top: var(--l-space-4); border-top: 1px solid var(--border); }
+#proxyFields[hidden] { display: none; }
+.advanced { margin-top: var(--l-space-3); }
+textarea.input { resize: vertical; font-family: inherit; line-height: 1.5; }
+.server-list-label { color: #c5ccdc; font-size: 12px; font-weight: 600; }
+.server-list { margin-top: var(--l-space-2); display: grid; gap: var(--l-space-2); max-height: 190px; overflow-y: auto; }
+.server-item { display: flex; align-items: center; gap: var(--l-space-2); padding: var(--l-space-2) var(--l-space-3); border: 1px solid var(--border); border-radius: var(--l-radius-md); background: rgba(255,255,255,.02); }
+.server-item.active { border-color: var(--brand); background: rgba(86,134,254,.1); }
+.server-item input[type="radio"] { accent-color: var(--brand); flex: 0 0 auto; }
+.server-text { flex: 1; min-width: 0; }
+.server-name { font-size: 12px; color: #e6ebf7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.server-meta { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.server-remove { flex: 0 0 auto; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+.server-remove:hover { color: var(--danger); background: rgba(240,109,114,.12); }
+.server-empty { color: var(--muted); font-size: 12px; }
+#proxyAdvanced summary { cursor: pointer; color: #c5ccdc; font-size: 12px; font-weight: 600; }
+#proxyAdvanced[open] summary { margin-bottom: var(--l-space-2); }
+.actions { display: flex; gap: var(--l-space-2); margin-top: var(--l-space-3); }
+.btn {
+  min-height: 40px; border: 1px solid var(--border); border-radius: var(--l-radius-md);
+  padding: 0 15px; color: var(--text); background: var(--surface-3); cursor: pointer; font-weight: 600;
+  transition: background-color var(--l-motion-fast) var(--l-ease-standard),
+              border-color var(--l-motion-fast) var(--l-ease-standard),
+              transform var(--l-motion-fast) var(--l-ease-standard);
+}
+/* The `hidden` attribute is only a UA default, so any `display` from a class
+   beats it. Without this rule a button marked hidden stays visible and — worse —
+   keeps taking clicks, which turns a press into an event on whatever sits
+   behind it. Every show/hide pair in this file depends on this line. */
+.btn[hidden] { display: none; }
+.btn:hover:not(:disabled) { border-color: rgba(255,255,255,.2); background: #333a50; }
+.btn:active:not(:disabled) { transform: scale(.98); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+/* Removal is destructive but reversible (the engine can be downloaded again),
+   so it is tinted rather than filled: it should read as "not the default action"
+   without shouting as loudly as an action that loses data. */
+.btn.btn-danger { color: var(--danger); border-color: rgba(240,109,114,.35); background: rgba(240,109,114,.08); }
+/* A control that fires a several-second job shows its own ring. The status line
+   further down the panel can be scrolled out of view or covered by the launch
+   overlay, so "the button itself is spinning" is the only busy signal the user
+   is guaranteed to see. */
+.btn.is-busy { display: inline-flex; align-items: center; gap: var(--l-space-2); }
+.btn.is-busy::before {
+  content: ""; width: 12px; height: 12px; flex: 0 0 auto;
+  border: 2px solid rgba(255,255,255,.18); border-top-color: currentColor;
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+.btn.btn-danger:hover:not(:disabled) { border-color: rgba(240,109,114,.6); background: rgba(240,109,114,.16); }
+.launch {
+  width: 100%; min-height: 50px; margin-top: var(--l-space-4); border: 0; border-radius: 12px;
+  background: var(--brand); color: white; font-size: 15px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 10px 24px rgba(86,134,254,.25);
+  transition: background-color var(--l-motion-base) var(--l-ease-standard),
+              box-shadow var(--l-motion-base) var(--l-ease-standard),
+              transform var(--l-motion-fast) var(--l-ease-standard);
+}
+.launch:hover:not(:disabled) { background: var(--brand-hover); transform: translateY(-1px); box-shadow: 0 14px 30px rgba(86,134,254,.32); }
+.launch:active:not(:disabled) { transform: translateY(0) scale(.985); box-shadow: 0 6px 16px rgba(86,134,254,.22); }
+.launch:disabled { opacity: .48; cursor: not-allowed; box-shadow: none; }
+.status {
+  min-height: 20px; margin-top: var(--l-space-2); color: var(--muted); font-size: 12px;
+  display: flex; align-items: center; gap: var(--l-space-2);
+  transition: color var(--l-motion-base) var(--l-ease-standard);
+}
+.status.ready { color: var(--success); }
+.status.error { color: var(--danger); }
+.status.scanning::before { content: ""; width: 12px; height: 12px; flex: 0 0 auto; border: 2px solid rgba(255,255,255,.18); border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; }
+.progress-track {
+  width: 100%; height: 6px; margin-top: var(--l-space-2);
+  border-radius: 999px; background: rgba(255,255,255,.1); overflow: hidden;
+}
+.progress-fill {
+  width: 0%; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, #4e7ff0, #75a1ff);
+  transition: width var(--l-motion-base) var(--l-ease-standard);
+}
+/* Software-rendering notice: an id rule so it outranks the generic .status look. */
+#gpuNotice {
+  margin-top: var(--l-space-3); padding: 10px var(--l-space-3);
+  border: 1px solid rgba(240,200,109,.32); border-radius: var(--l-radius-md);
+  background: rgba(240,200,109,.09); color: var(--warning);
+  align-items: flex-start; line-height: 1.4;
+  animation: notice-in var(--l-motion-slow) var(--l-ease-emphasized) both;
+}
+@keyframes notice-in {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+.error-box { margin-top: var(--l-space-3); padding: var(--l-space-3); border: 1px solid rgba(240,109,114,.5); border-radius: var(--l-radius-md); color: #ffacb0; background: rgba(240,109,114,.08); animation: notice-in var(--l-motion-slow) var(--l-ease-emphasized) both; }
+.hidden { display: none !important; }
+.overlay { position: absolute; inset: 0; z-index: 15; border-radius: var(--l-radius-xl); background: rgba(16,19,28,.94); display: grid; place-content: center; justify-items: center; gap: var(--l-space-3); }
+.spinner { width: 31px; height: 31px; border: 3px solid rgba(255,255,255,.14); border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 560px) { .dialog { padding: var(--l-space-5); } .grid { grid-template-columns: 1fr; } .page { padding-inline: var(--l-space-3); } }
+/* Motion is decoration: drop it, but keep the busy rings visible so no state is lost. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+  .dialog, #gpuNotice, .error-box { animation: none; }
+  .status.scanning::before, .spinner, .btn.is-busy::before { animation: none; }
+  /* With motion dropped the ring would be a blank circle, so the busy buttons
+     keep their plain label instead of showing a mark that says nothing. */
+  .btn.is-busy::before { content: none; }
+}
+</style>
+</head>
+<body>
+<header id="titlebar">
+  <div class="titlebar-left"><span id="titlebarIconFallback" class="titlebar-placeholder"></span><img id="titlebarIcon" class="titlebar-icon hidden" alt=""><span>DeepSeek Harness</span></div>
+  <div class="titlebar-controls">
+    <button id="btnMin" class="titlebar-btn" title="Свернуть" aria-label="Свернуть">&#8211;</button>
+    <button id="btnMax" class="titlebar-btn" title="Развернуть" aria-label="Развернуть">&#9723;</button>
+    <button id="btnClose" class="titlebar-btn" title="Закрыть" aria-label="Закрыть">&#10005;</button>
+  </div>
+</header>
+<main class="page">
+  <section class="dialog" aria-labelledby="launcherTitle">
+    <div class="brand">
+      <div id="brandFallback" class="brand-placeholder"></div>
+      <img id="brandIcon" class="brand-logo hidden" alt="Логотип DeepSeek Harness">
+      <h1 id="launcherTitle">DeepSeek Harness</h1>
+      <p class="subtitle">Настройте локальный запуск приложения</p>
+    </div>
+
+    <div class="section">
+      <div class="grid">
+        <div class="field">
+          <label for="portInput">Порт локального сервера</label>
+          <input id="portInput" class="input" type="number" min="1" max="65535" placeholder="Автопоиск" disabled>
+        </div>
+        <div class="section-title">
+          <div><strong>Полный экран</strong><p class="section-description">Открыть Harness во весь экран</p></div>
+          <label class="switch"><input id="fullscreenToggle" type="checkbox" disabled><span></span></label>
+        </div>
+      </div>
+      <div id="portStatus" class="status scanning">Поиск свободного порта…</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <div><strong>Подключить V2Ray</strong><p class="section-description">Пустить запросы Harness через ваш сервер — вставьте ссылку или список серверов</p></div>
+        <div class="section-controls">
+          <button id="installProxyCoreBtn" class="btn btn-inline" type="button">Установить V2Ray (движок)</button>
+          <button id="removeProxyCoreBtn" class="btn btn-inline btn-danger" type="button" hidden>Удалить V2Ray</button>
+          <label class="switch"><input id="proxyEnabled" type="checkbox"><span></span></label>
+        </div>
+      </div>
+      <div class="status">Установка скачивает движок туннеля (v2ray.exe), удаление — убирает его с компьютера. Список серверов при удалении не трогается.</div>
+      <div id="proxyFields" hidden>
+        <div class="field">
+          <label for="proxyLinkInput">Ссылка на сервер</label>
+          <textarea id="proxyLinkInput" class="input" rows="2" placeholder="vless://… — можно вставить сразу несколько ссылок, каждая с новой строки" autocomplete="off"></textarea>
+        </div>
+        <div class="actions"><button id="addLinkBtn" class="btn" type="button">Добавить в список</button></div>
+
+        <div class="field">
+          <label for="proxySubUrl">Ссылка на список серверов (подписка)</label>
+          <input id="proxySubUrl" class="input" placeholder="https://…" autocomplete="off">
+        </div>
+        <div class="actions"><button id="loadSubBtn" class="btn" type="button">Загрузить список</button></div>
+
+        <div id="proxyServersWrap" class="advanced" hidden>
+          <label class="server-list-label">Серверы</label>
+          <div id="proxyServers" class="server-list"></div>
+        </div>
+
+        <details id="proxyAdvanced" class="advanced">
+          <summary>Дополнительные параметры</summary>
+          <div class="grid">
+            <div class="field"><label for="proxyHost">Сервер</label><input id="proxyHost" class="input" placeholder="proxy.example.com" autocomplete="off"></div>
+            <div class="field"><label for="proxyRemotePort">Порт сервера</label><input id="proxyRemotePort" class="input" type="number" value="443" min="1" max="65535"></div>
+            <div class="field"><label for="proxyUuid">UUID VLESS</label><input id="proxyUuid" class="input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off"></div>
+            <div class="field"><label for="proxyLocalPort">Локальный SOCKS5</label><input id="proxyLocalPort" class="input" type="number" value="10808" min="1" max="65535"></div>
+            <div class="field"><label for="proxyHttpPort">Локальный HTTP (для Harness)</label><input id="proxyHttpPort" class="input" type="number" value="10809" min="1" max="65535"></div>
+            <div class="field"><label for="proxyTransport">Транспорт</label><select id="proxyTransport" class="input"><option value="tcp">TCP</option><option value="ws">WebSocket</option><option value="grpc">gRPC</option></select></div>
+            <div class="field"><label for="proxySecurity">Защита</label><select id="proxySecurity" class="input"><option value="tls">TLS</option><option value="reality">Reality</option><option value="none">Без TLS</option></select></div>
+          </div>
+          <div id="tlsFields" class="advanced field"><label for="proxyServerName">TLS Server Name</label><input id="proxyServerName" class="input" placeholder="По умолчанию адрес сервера"></div>
+          <div id="wsFields" class="advanced grid hidden">
+            <div class="field"><label for="proxyWsPath">WebSocket path</label><input id="proxyWsPath" class="input" value="/"></div>
+            <div class="field"><label for="proxyWsHost">WebSocket Host</label><input id="proxyWsHost" class="input" placeholder="Необязательно"></div>
+          </div>
+        </details>
+
+        <div class="actions">
+          <button id="testProxyBtn" class="btn" type="button">Подключить и проверить</button>
+          <button id="stopProxyBtn" class="btn" type="button" disabled>Отключить</button>
+        </div>
+        <div id="proxyStatus" class="status">V2Ray не подключён</div>
+        <div id="proxyInstallProgress" class="progress-track hidden" aria-hidden="true">
+          <div id="proxyInstallProgressBar" class="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="gpuNotice" class="status hidden"></div>
+    <button id="launchBtn" class="launch" disabled>Запустить Harness</button>
+    <div id="errorBox" class="error-box hidden"><span id="errorText"></span></div>
+    <div id="launchOverlay" class="overlay hidden"><div class="spinner"></div><div id="overlayText">Запуск…</div></div>
+  </section>
+</main>
+<script>
+const byId = id => document.getElementById(id);
+const portInput = byId('portInput');
+const portStatus = byId('portStatus');
+const launchBtn = byId('launchBtn');
+const fullscreenToggle = byId('fullscreenToggle');
+const proxyEnabled = byId('proxyEnabled');
+const proxyFields = byId('proxyFields');
+const proxyStatus = byId('proxyStatus');
+const proxyInstallProgress = byId('proxyInstallProgress');
+const proxyInstallProgressBar = byId('proxyInstallProgressBar');
+const installProxyCoreBtn = byId('installProxyCoreBtn');
+const removeProxyCoreBtn = byId('removeProxyCoreBtn');
+const testProxyBtn = byId('testProxyBtn');
+const stopProxyBtn = byId('stopProxyBtn');
+const proxyLinkInput = byId('proxyLinkInput');
+const proxySubUrl = byId('proxySubUrl');
+const proxyServersWrap = byId('proxyServersWrap');
+const proxyServers = byId('proxyServers');
+const launchOverlay = byId('launchOverlay');
+const overlayText = byId('overlayText');
+const errorBox = byId('errorBox');
+const errorText = byId('errorText');
+let currentPort = null;
+let proxyRunning = false;
+// Last known answer to "is v2ray.exe on this machine" — the single input every
+// engine-button decision is made from. `null` until the first status read, which
+// makes an unknown state render the install button rather than hide both.
+let v2rayCoreAvailable = null;
+/** How long a success message stays before the panel returns to its rest state. */
+const PROXY_READY_LINGER_MS = 6000;
+let proxyReadyTimer = 0;
+let proxySettingsDoc = { enabled: false, subscriptionUrl: '', servers: [], activeId: '', socksPort: 10808, httpPort: 10809 };
+let portCheckSequence = 0;
+let portCheckTimer = 0;
+
+function setStatus(element, kind, text) {
+  element.className = `status ${kind || ''}`.trim();
+  element.textContent = text;
+  // Success wording is never a form of control — "V2Ray удалён" tells the user
+  // nothing left to do — so it is allowed to clear itself and gets out of the
+  // way. Errors and progress stay: they are the states a user acts on.
+  if (element === proxyStatus && kind === 'ready') {
+    clearTimeout(proxyReadyTimer);
+    proxyReadyTimer = setTimeout(() => {
+      if (proxyStatus.textContent !== text) return;
+      setStatus(proxyStatus, '', proxyRunning ? 'Прокси подключён' : 'V2Ray не подключён');
+    }, PROXY_READY_LINGER_MS);
+  } else if (element === proxyStatus) {
+    clearTimeout(proxyReadyTimer);
+  }
+}
+
+function setInstallProgress(percent, visible = true) {
+  const safe = Math.max(0, Math.min(100, Math.floor(Number(percent) || 0)));
+  proxyInstallProgress.classList.toggle('hidden', !visible);
+  proxyInstallProgressBar.style.width = `${safe}%`;
+}
+
+/**
+ * The reason the shell threw, without Electron's IPC wrapper.
+ *
+ * A rejected `ipcRenderer.invoke` arrives as `Error invoking remote method
+ * '<channel>': Error: <reason>`, and sometimes with the error's own class
+ * prefixed as well. Only the reason is worth showing; the rest buries it.
+ *
+ * The value is duck-typed on `.message` rather than checked with `instanceof`:
+ * a rejection crossing the bridge (and any error a test throws from another
+ * JavaScript context) is not an instance of this page's `Error`, and a plain
+ * `String(value)` would then re-prefix everything this function strips.
+ */
+function readableError(error) {
+  const raw = error !== null && typeof error === 'object' && typeof error.message === 'string'
+    ? error.message
+    : String(error);
+  const wrapper = /^(?:[A-Za-z]*Error:\s*)?(?:Error invoking remote method '[^']*':\s*)?(?:[A-Za-z]*Error:\s*)?/;
+  return raw.replace(wrapper, '').trim() || raw;
+}
+
+/**
+ * Say the tunnel engine is missing as soon as the panel opens.
+ *
+ * The switch alone cannot make a tunnel without the core binary, so this is shown
+ * before the launch attempt rather than after it fails — otherwise the first
+ * thing the user sees is a failed launch they cannot explain.
+ */
+/**
+ * Decide which engine control is offered: install, or remove.
+ *
+ * Only ever one of them is offered, and "offered" means *pressable*: the two
+ * jobs contradict each other, so exactly one button is enabled at a time.
+ *
+ * Both buttons stay laid out even so. Hiding a button removes it from hit
+ * testing, so visibility must never be what distinguishes the pair: a press
+ * whose outcome was "handled" would otherwise resolve on a stray element behind
+ * the button and read as "nothing happened". Disabling keeps the ring on the
+ * button that was actually pressed.
+ *
+ * `busy` is a third thing again: either control can be mid-job, so the state is
+ * applied to both buttons from this one place rather than toggled by hand in the
+ * two handlers. Setting a button's `textContent` while it is busy would wipe the
+ * label, so the busy pair is frozen here and never re-labelled.
+ */
+function updateCoreInstallButton(binaryAvailable, busy = null) {
+  if (binaryAvailable !== undefined) v2rayCoreAvailable = binaryAvailable === true ? true : binaryAvailable === false ? false : null;
+  const known = v2rayCoreAvailable;
+  const active = busy === 'install' ? installProxyCoreBtn : busy === 'remove' ? removeProxyCoreBtn : null;
+  if (active !== null) {
+    installProxyCoreBtn.disabled = active !== installProxyCoreBtn;
+    removeProxyCoreBtn.disabled = active !== removeProxyCoreBtn;
+    active.disabled = true;
+    active.classList.add('is-busy');
+    return;
+  }
+  installProxyCoreBtn.classList.remove('is-busy');
+  removeProxyCoreBtn.classList.remove('is-busy');
+  // `hidden` is written every time, both ways: an attribute left behind by an
+  // earlier state is invisible in the source and outlives every later update,
+  // which is exactly how the pair ended up stuck in its "missing" shape.
+  installProxyCoreBtn.hidden = false;
+  removeProxyCoreBtn.hidden = false;
+
+  const missing = known === false;
+  // Both buttons carry the word "V2Ray"; the neighbouring switch does not. The
+  // label says which of the two jobs each one does, because "установлен" alone
+  // reads as something that is on — and that would be the switch's job.
+  installProxyCoreBtn.disabled = !missing;
+  installProxyCoreBtn.textContent = missing ? 'Установить V2Ray (движок)' : 'Движок V2Ray установлен';
+  installProxyCoreBtn.title = missing
+    ? 'Скачать и подготовить v2ray.exe для этого приложения'
+    : 'Движок туннеля уже найден — установка не нужна';
+
+  removeProxyCoreBtn.disabled = known !== true;
+  removeProxyCoreBtn.textContent = 'Удалить V2Ray';
+  removeProxyCoreBtn.title = 'Убрать v2ray.exe и файлы данных с компьютера';
+}
+
+async function warnIfCoreMissing() {
+  try {
+    // refreshCoreAvailability renders the buttons and the launch warning together.
+    await refreshCoreAvailability();
+    if (v2rayCoreAvailable === false) {
+      setStatus(proxyStatus, '', 'Движок V2Ray не установлен. Нажмите «Установить V2Ray (движок)» — приложение скачает его само.');
+    }
+  } catch { /* the tunnel simply stays untested */ }
+}
+
+/** Read the engine's presence from the main process and re-render both buttons. */
+async function refreshCoreAvailability() {
+  const status = await window.harnessAPI.v2rayStatus();
+  updateCoreInstallButton(status?.binaryAvailable);
+  // The buttons and the launch warning are two views of one fact, so they are
+  // never updated apart: a stale warning survives a reinstall otherwise.
+  refreshProxyPlan();
+  return status;
+}
+
+/**
+ * The server the tunnel should use, plus the two local ports.
+ *
+ * When the advanced fields are untouched the active server from the saved list is
+ * sent whole; hand-edited fields win, so a one-off tweak never has to be saved.
+ */
+function proxySettings() {
+  const active = proxySettingsDoc.servers.find(server => server.id === proxySettingsDoc.activeId) || proxySettingsDoc.servers[0] || null;
+  const host = byId('proxyHost').value.trim();
+  const uuid = byId('proxyUuid').value.trim();
+  const remotePort = Number(byId('proxyRemotePort').value);
+  const edited = host !== '' && uuid !== '';
+  const server = edited
+    ? { ...(active || {}), protocol: active?.protocol || 'vless', host, remotePort, uuid, transport: byId('proxyTransport').value, security: byId('proxySecurity').value }
+    : active;
+  return {
+    server,
+    host: host || server?.host || '', remotePort: remotePort || server?.remotePort || 443, uuid: uuid || server?.uuid || '',
+    localPort: Number(byId('proxyLocalPort').value), httpPort: Number(byId('proxyHttpPort').value),
+    transport: byId('proxyTransport').value, security: byId('proxySecurity').value,
+    serverName: byId('proxyServerName').value.trim(), wsPath: byId('proxyWsPath').value.trim(), wsHost: byId('proxyWsHost').value.trim(),
+  };
+}
+
+/**
+ * Fill the advanced fields from one server entry, so the panel always shows what
+ * the tunnel is about to use.
+ * @param server - the active server, or null when the list is empty.
+ */
+function fillAdvancedFields(server) {
+  if (!server) return;
+  byId('proxyHost').value = server.host || '';
+  byId('proxyRemotePort').value = server.remotePort || 443;
+  byId('proxyUuid').value = server.uuid || '';
+  byId('proxyTransport').value = ['ws', 'grpc', 'tcp'].includes(server.transport) ? server.transport : 'tcp';
+  byId('proxySecurity').value = ['tls', 'reality', 'none'].includes(server.security) ? server.security : 'none';
+  byId('proxyServerName').value = server.serverName || '';
+  byId('proxyWsPath').value = server.wsPath || '/';
+  byId('proxyWsHost').value = server.wsHost || '';
+  byId('wsFields').classList.toggle('hidden', server.transport !== 'ws');
+  byId('tlsFields').classList.toggle('hidden', server.security === 'none');
+}
+
+/** Redraw the server list from the saved document. */
+function renderServers() {
+  const servers = proxySettingsDoc.servers || [];
+  proxyServersWrap.hidden = servers.length === 0;
+  proxyServers.textContent = '';
+  if (servers.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'server-empty';
+    empty.textContent = 'Список пуст — вставьте ссылку или загрузите подписку';
+    proxyServers.append(empty);
+    return;
+  }
+  const activeId = proxySettingsDoc.activeId || servers[0].id;
+  for (const server of servers) {
+    const item = document.createElement('label');
+    item.className = `server-item${server.id === activeId ? ' active' : ''}`;
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'proxyServer';
+    radio.checked = server.id === activeId;
+    radio.addEventListener('change', () => void selectServer(server.id));
+
+    const text = document.createElement('div');
+    text.className = 'server-text';
+    const name = document.createElement('div');
+    name.className = 'server-name';
+    name.textContent = server.name || `${server.host}:${server.remotePort}`;
+    const meta = document.createElement('div');
+    meta.className = 'server-meta';
+    meta.textContent = `${server.protocol} · ${server.host}:${server.remotePort}${server.security && server.security !== 'none' ? ` · ${server.security}` : ''}`;
+    text.append(name, meta);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'server-remove';
+    remove.title = 'Удалить сервер';
+    remove.textContent = '×';
+    remove.addEventListener('click', event => { event.preventDefault(); void removeServer(server.id); });
+
+    item.append(radio, text, remove);
+    proxyServers.append(item);
+  }
+}
+
+/**
+ * Pull the saved document into the panel: list, selection, ports, subscription URL.
+ * @param document - a settings document from the main process.
+ */
+function applySettings(document) {
+  proxySettingsDoc = document;
+  proxyEnabled.checked = Boolean(document.enabled);
+  proxyFields.hidden = !proxyEnabled.checked;
+  proxySubUrl.value = document.subscriptionUrl || '';
+  if (document.socksPort) byId('proxyLocalPort').value = document.socksPort;
+  if (document.httpPort) byId('proxyHttpPort').value = document.httpPort;
+  renderServers();
+  const active = document.servers.find(server => server.id === document.activeId) || document.servers[0] || null;
+  fillAdvancedFields(active);
+}
+
+async function refreshProxySettings() {
+  try {
+    const document = await window.harnessAPI.v2raySettings();
+    applySettings(document);
+    // Button state should be correct even when tunnel is off.
+    const status = await window.harnessAPI.v2rayStatus();
+    updateCoreInstallButton(status?.binaryAvailable);
+    // A saved "on" with no engine is the state that blocks a launch, so name it now.
+    if (document.enabled && status?.binaryAvailable === false) {
+      setStatus(proxyStatus, 'error', 'Движок V2Ray не установлен — нажмите «Установить V2Ray (движок)». Или выключите туннель переключателем, чтобы запустить приложение без него.');
+    }
+  } catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
+}
+
+async function addLink() {
+  const text = proxyLinkInput.value.trim();
+  if (text === '') { setStatus(proxyStatus, 'error', 'Вставьте ссылку на сервер'); return; }
+  try {
+    const result = await window.harnessAPI.v2rayImportLink(text);
+    applySettings(result.settings);
+    proxyLinkInput.value = '';
+    setStatus(proxyStatus, 'ready', `Добавлено серверов: ${result.servers.length}`);
+  } catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
+}
+
+async function loadSubscription() {
+  const url = proxySubUrl.value.trim();
+  if (url === '') { setStatus(proxyStatus, 'error', 'Вставьте ссылку на список серверов'); return; }
+  byId('loadSubBtn').disabled = true;
+  setStatus(proxyStatus, 'scanning', 'Загружаю список серверов…');
+  try {
+    const result = await window.harnessAPI.v2rayImportSubscription(url);
+    applySettings(result.settings);
+    setStatus(proxyStatus, 'ready', `Загружено серверов: ${result.servers.length}`);
+  } catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
+  finally { byId('loadSubBtn').disabled = false; }
+}
+
+async function installCoreFromLauncher() {
+  updateCoreInstallButton(undefined, 'install');
+  setStatus(proxyStatus, 'scanning', 'Ставлю V2Ray… 0%');
+  setInstallProgress(0, true);
+
+  const formatMb = (bytes) => `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+  let lastBytesText = '';
+  const unsubscribe = typeof window.harnessAPI.onV2RayInstallProgress === 'function'
+    ? window.harnessAPI.onV2RayInstallProgress((payload) => {
+      const percent = Number(payload?.percent);
+      const safePercent = Number.isFinite(percent) ? Math.max(0, Math.min(100, Math.floor(percent))) : null;
+      const message = typeof payload?.message === 'string' && payload.message.trim() !== ''
+        ? payload.message.trim()
+        : 'Установка V2Ray…';
+      const loadedBytes = Number(payload?.loadedBytes);
+      const totalBytes = Number(payload?.totalBytes);
+      const hasLoaded = Number.isFinite(loadedBytes) && loadedBytes > 0;
+      const hasTotal = Number.isFinite(totalBytes) && totalBytes > 0;
+      const bytesText = hasLoaded
+        ? (hasTotal ? ` — ${formatMb(loadedBytes)} / ${formatMb(totalBytes)}` : ` — ${formatMb(loadedBytes)}`)
+        : '';
+      lastBytesText = bytesText;
+      if (safePercent === null) {
+        setStatus(proxyStatus, 'scanning', `${message}${bytesText}`);
+        return;
+      }
+      setInstallProgress(safePercent, true);
+      setStatus(proxyStatus, 'scanning', `${message} (${safePercent}%)${bytesText}`);
+    })
+    : null;
+
+  try {
+    const result = await window.harnessAPI.v2rayInstallCore();
+    if (result && result.ok === true && result.status?.binaryAvailable !== false) {
+      const bytesSuffix = lastBytesText === '' ? '' : lastBytesText;
+      setInstallProgress(100, true);
+      setStatus(proxyStatus, 'ready', `V2Ray установлен. Можно подключать туннель. (100%)${bytesSuffix}`);
+      // Re-reads the settings document and the engine's presence together, so
+      // the buttons are repainted from the shell's answer rather than from the
+      // install's own report.
+      await refreshProxySettings();
+      return;
+    }
+    const reason = result && typeof result.message === 'string' && result.message.trim() !== ''
+      ? result.message.trim()
+      : 'Не удалось установить V2Ray. Проверьте подключение к сети и повторите.';
+    setStatus(proxyStatus, 'error', readableError(reason));
+    setInstallProgress(0, false);
+  } catch (error) {
+    setStatus(proxyStatus, 'error', readableError(error));
+    updateCoreInstallButton(false);
+    setInstallProgress(0, false);
+  } finally {
+    if (typeof unsubscribe === 'function') unsubscribe();
+    // Unconditional: the failure paths above are what made the panel lie before.
+    // A button that says "установлено" because an exception skipped the update
+    // is worse than a button that briefly shows the wrong label.
+    updateCoreInstallButton(v2rayCoreAvailable);
+  }
+}
+
+async function removeCoreFromLauncher() {
+  // Removing the engine kills any tunnel using it, so the tunnel state is
+  // reset afterwards rather than left claiming to be connected.
+  updateCoreInstallButton(undefined, 'remove');
+  setStatus(proxyStatus, 'scanning', 'Удаляю V2Ray…');
+  setInstallProgress(0, false);
+
+  // The result is checked first and the panel is painted once, at the end. The
+  // earlier shape returned from inside `try` on success, which skipped the
+  // `finally`-equivalent repaint entirely: the panel said "удалён" while the
+  // buttons still said "занято". Success is not an early exit from bookkeeping.
+  let failureReason = '';
+  try {
+    const result = await window.harnessAPI.v2rayRemoveCore();
+    if (result?.status?.binaryAvailable === false) {
+      if (result.ok === true) {
+        setStatus(proxyStatus, 'ready', 'V2Ray удалён. Движок больше не занимает место; установить его заново можно этой же кнопкой.');
+      } else {
+        failureReason = typeof result.message === 'string' && result.message.trim() !== ''
+          ? result.message.trim()
+          : 'Не удалось удалить V2Ray. Закройте приложение и повторите.';
+      }
+      // The engine's presence comes from the answer that just arrived. Passing
+      // the remembered value instead repainted the buttons from a fact that
+      // predates the removal, which left "удалён" above two controls that still
+      // claimed the engine was there.
+      updateCoreInstallButton(result.status.binaryAvailable);
+    } else {
+      // No answer about the file is the one outcome to be suspicious of: the
+      // command may have reported success while the engine is still there.
+      failureReason = 'Не удалось удалить V2Ray. Закройте приложение и повторите.';
+      await refreshCoreAvailability();
+    }
+  } catch (error) {
+    failureReason = readableError(error);
+    // The removal may have partly succeeded before the failure, so the state is
+    // re-read rather than assumed.
+    await refreshCoreAvailability();
+  }
+  if (failureReason !== '') setStatus(proxyStatus, 'error', failureReason);
+}
+
+async function selectServer(id) {
+  try {
+    applySettings(await window.harnessAPI.v2raySelect(id));
+    if (proxyRunning) setStatus(proxyStatus, 'scanning', 'Сервер изменён — нажмите «Подключить и проверить»');
+  } catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
+}
+
+async function removeServer(id) {
+  try {
+    applySettings(await window.harnessAPI.v2rayRemove(id));
+    setStatus(proxyStatus, '', 'Сервер удалён');
+  } catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
+}
+async function loadBrandIcon() {
+  const url = await window.harnessAPI.getAppIcon().catch(() => '');
+  if (!url) return;
+  for (const [imageId, fallbackId] of [['brandIcon', 'brandFallback'], ['titlebarIcon', 'titlebarIconFallback']]) {
+    const image = byId(imageId); image.src = url; image.classList.remove('hidden'); byId(fallbackId).classList.add('hidden');
+  }
+}
+async function connectAndTestProxy() {
+  testProxyBtn.disabled = true; setStatus(proxyStatus, 'scanning', 'Запуск V2Ray…');
+  try {
+    const started = await window.harnessAPI.v2rayStart(proxySettings());
+    proxyRunning = Boolean(started.running); stopProxyBtn.disabled = !proxyRunning;
+    setStatus(proxyStatus, 'scanning', `Прокси открыт на 127.0.0.1:${started.httpPort}. Проверка туннеля…`);
+    const result = await window.harnessAPI.v2rayTest();
+    setStatus(proxyStatus, 'ready', `Прокси работает: ${result.target}, ${result.latencyMs} мс`);
+    clearTunnelFailure();
+    return true;
+  } catch (error) {
+    proxyRunning = false; stopProxyBtn.disabled = true;
+    const message = readableError(error);
+    setStatus(proxyStatus, 'error', message);
+    // The proxy section is below the fold in this panel, so a tunnel that failed
+    // to start while the switch is off has to be echoed next to the launch
+    // button — the user's next move is there, not in the proxy section.
+    reportTunnelFailure(`прокси не запустился. ${message}`);
+    return false;
+  } finally { testProxyBtn.disabled = false; refreshCoreAvailability(); }
+}
+async function disconnectProxy() {
+  testProxyBtn.disabled = true; stopProxyBtn.disabled = true;
+  try { await window.harnessAPI.v2rayStop(); proxyRunning = false; setStatus(proxyStatus, '', 'V2Ray отключён'); }
+  catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
+  finally { testProxyBtn.disabled = false; refreshCoreAvailability(); }
+}
+proxyEnabled.addEventListener('change', () => {
+  proxyFields.hidden = !proxyEnabled.checked;
+  void window.harnessAPI.v2raySave({ enabled: proxyEnabled.checked }).catch(() => {});
+  if (proxyEnabled.checked) void warnIfCoreMissing();
+  if (!proxyEnabled.checked && proxyRunning) void disconnectProxy();
+  refreshProxyPlan();
+});
+byId('proxyTransport').addEventListener('change', event => byId('wsFields').classList.toggle('hidden', event.target.value !== 'ws'));
+byId('proxySecurity').addEventListener('change', event => byId('tlsFields').classList.toggle('hidden', event.target.value === 'none'));
+testProxyBtn.addEventListener('click', () => void connectAndTestProxy());
+stopProxyBtn.addEventListener('click', () => void disconnectProxy());
+installProxyCoreBtn.addEventListener('click', () => void installCoreFromLauncher());
+removeProxyCoreBtn.addEventListener('click', () => void removeCoreFromLauncher());
+byId('addLinkBtn').addEventListener('click', () => void addLink());
+byId('loadSubBtn').addEventListener('click', () => void loadSubscription());
+
+// The panel opens on the saved document, so a server added from the in-app settings
+// page is already selected here — the two surfaces edit one file.
+void refreshProxySettings();
+
+// The in-app settings page edits that same file, so a link or a list added while
+// this window was closed would never be drawn here. Refreshing on focus makes the
+// two faces agree without polling.
+window.addEventListener('focus', () => { void refreshProxySettings(); });
+
+window.harnessAPI.onReady((port, fullscreen) => {
+  currentPort = port; portInput.value = port; portInput.disabled = false; launchBtn.disabled = false;
+  fullscreenToggle.disabled = false; fullscreenToggle.checked = Boolean(fullscreen); document.body.classList.toggle('fullscreen', Boolean(fullscreen));
+  setStatus(portStatus, 'ready', `Порт ${port} свободен`); void loadBrandIcon();
+});
+window.harnessAPI.onFullscreenChanged(enabled => { fullscreenToggle.checked = Boolean(enabled); document.body.classList.toggle('fullscreen', Boolean(enabled)); });
+window.harnessAPI.onMaximizeChanged(maximized => { byId('btnMax').innerHTML = maximized ? '&#10063;' : '&#9723;'; });
+/**
+ * Report a launch failure where the user will actually see it.
+ *
+ * The tunnel's own status line lives inside a section that can be scrolled out
+ * of view, so a failure that is reported only there reads as "nothing happened".
+ * The error box sits directly under the launch button and is what the user
+ * already associates with "the launch did not work".
+ */
+function showLaunchFailure(text) {
+  errorText.textContent = `Ошибка: ${text}`;
+  errorBox.classList.remove('hidden');
+  launchOverlay.classList.add('hidden');
+  launchBtn.disabled = false;
+  portInput.disabled = false;
+  fullscreenToggle.disabled = false;
+  proxyEnabled.disabled = false;
+  void warnIfCoreMissing();
+}
+
+/**
+ * Say up front whether pressing "Запустить Harness" will take the tunnel with it.
+ *
+ * The switch states an intent; the engine file decides whether that intent can be
+ * carried out. When they disagree, one line next to the launch button is what
+ * stops the click from being a surprise.
+ */
+function refreshProxyPlan() {
+  if (proxyEnabled.checked && v2rayCoreAvailable === false) {
+    reportTunnelFailure('прокси включён, но движок удалён — установите его или выключите туннель');
+    return;
+  }
+  clearTunnelFailure();
+}
+
+function reportTunnelFailure(text) {
+  errorText.textContent = `Ошибка: ${text}`;
+  errorBox.classList.remove('hidden');
+}
+
+function clearTunnelFailure() {
+  errorText.textContent = '';
+  errorBox.classList.add('hidden');
+}
+
+window.harnessAPI.onLaunchProgress(data => { const labels = { spawning: 'Запуск сервера…', waiting: 'Ожидание готовности…', loading: 'Загрузка интерфейса…' }; overlayText.textContent = labels[data?.stage] || 'Запуск…'; });
+window.harnessAPI.onLaunchError(message => showLaunchFailure(String(message)));
+byId('btnMin').addEventListener('click', () => window.harnessAPI.minimize());
+byId('btnMax').addEventListener('click', () => window.harnessAPI.maximize());
+byId('btnClose').addEventListener('click', () => window.harnessAPI.close());
+byId('titlebar').addEventListener('dblclick', event => { if (!event.target.closest('.titlebar-btn')) window.harnessAPI.maximize(); });
+fullscreenToggle.addEventListener('change', () => window.harnessAPI.toggleFullscreen(fullscreenToggle.checked));
+
+portInput.addEventListener('input', () => {
+  const port = Number(portInput.value); currentPort = Number.isInteger(port) ? port : null; clearTimeout(portCheckTimer);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) { launchBtn.disabled = true; setStatus(portStatus, 'error', 'Введите порт от 1 до 65535'); return; }
+  launchBtn.disabled = true; setStatus(portStatus, 'scanning', `Проверка порта ${port}…`); const sequence = ++portCheckSequence;
+  portCheckTimer = setTimeout(async () => {
+    const result = await window.harnessAPI.checkPort(port).catch(() => ({ ok: false, reason: 'unavailable' }));
+    if (sequence !== portCheckSequence || Number(portInput.value) !== port) return;
+    launchBtn.disabled = !result.ok; setStatus(portStatus, result.ok ? 'ready' : 'error', result.ok ? `Порт ${port} свободен` : `Порт ${port} ${result.reason === 'busy' ? 'занят' : 'недоступен'}`);
+  }, 350);
+});
+
+async function launch() {
+  const port = Number(portInput.value); if (!Number.isInteger(port) || port < 1 || port > 65535) return; currentPort = port;
+  launchBtn.disabled = true; portInput.disabled = true; fullscreenToggle.disabled = true; proxyEnabled.disabled = true; clearTunnelFailure(); launchOverlay.classList.remove('hidden');
+  if (proxyEnabled.checked && !proxyRunning) {
+    overlayText.textContent = 'Подключение V2Ray…';
+    if (!await connectAndTestProxy()) {
+      // The launch stops on purpose: the tunnel is on, so going ahead would send
+      // traffic outside it while the user believes it is protected. The shell's
+      // reason says why it failed but not how to get moving again — add that.
+      const hint = 'Чтобы запустить приложение без туннеля, выключите его переключателем выше.';
+      setStatus(proxyStatus, 'error', `${proxyStatus.textContent} ${hint}`);
+      reportTunnelFailure(`${proxyStatus.textContent} ${hint}`);
+      launchOverlay.classList.add('hidden'); launchBtn.disabled = false; portInput.disabled = false; fullscreenToggle.disabled = false; proxyEnabled.disabled = false; return;
+    }
+  }
+  overlayText.textContent = 'Запуск сервера…'; window.harnessAPI.startHarness(port);
+}
+launchBtn.addEventListener('click', () => void launch());
+portInput.addEventListener('keydown', event => { if (event.key === 'Enter' && !launchBtn.disabled) void launch(); });
+void loadBrandIcon();
+
+// Explain a software-rendering run. The app falls back on its own when the GPU
+// process cannot start, so without this the only symptom would be less smooth
+// animation. main.js passes the reason as the `gpu` query parameter; no
+// parameter means hardware compositing is active and nothing is shown.
+function showGpuNotice() {
+  const reason = new URLSearchParams(location.search).get('gpu');
+  if (!reason) return;
+  const notice = byId('gpuNotice');
+  notice.textContent = reason === 'crash'
+    ? 'GPU недоступен: приложение перезапустилось в режиме программного рендеринга. Анимации могут быть менее плавными.'
+    : 'Включён программный рендеринг (DSH_SOFTWARE_RENDERING). Анимации могут быть менее плавными.';
+  notice.classList.remove('hidden');
+}
+showGpuNotice();
+</script>
+</body>
+</html>

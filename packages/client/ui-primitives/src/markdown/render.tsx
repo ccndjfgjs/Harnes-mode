@@ -33,6 +33,10 @@ export interface MarkdownCodeLabels {
   copyLabel: string
   /** Copy-button label during the post-copy confirmation window. */
   copiedLabel: string
+  /** Read-aloud button label; no button without it (and without onSpeakCode). */
+  speakLabel?: string | undefined
+  /** Compose one fence's accessible region name from its grammar and line count. */
+  describeCode?: ((lang: string | undefined, lines: number) => string) | undefined
 }
 
 /** Localized chrome for a Markdown document. */
@@ -134,6 +138,8 @@ export interface MarkdownRenderContext {
   readonly inBlockquote?: boolean
   /** Inline-code file mentions; absent wherever no opener vocabulary exists. */
   readonly fileMentions: MarkdownFileMentions | undefined
+  /** Read fences aloud; absent wherever no speech service is wired. */
+  readonly onSpeakCode: ((lines: readonly string[]) => void) | undefined
   /** Inside an anchor's children: interactive mentions must not nest there. */
   readonly inLink?: boolean
   /** Reference targets visible to this pass. */
@@ -327,6 +333,8 @@ function renderCode(node: Md.Code, key: Key, context: MarkdownRenderContext): Re
     // its text extraction saw the code block's trailing newline.
     return <Fragment key={key}>{renderTexToReact(`${node.value}\n`, true)}</Fragment>
   }
+  // Line count mirrors CodeBlock's display trim (one trailing newline ignored).
+  const lines = node.value.endsWith('\n') ? node.value.split('\n').length - 1 : node.value.split('\n').length
   return (
     <CodeBlock
       key={key}
@@ -343,6 +351,9 @@ function renderCode(node: Md.Code, key: Key, context: MarkdownRenderContext): Re
       streaming={context.streaming}
       copyLabel={context.labels.code.copyLabel}
       copiedLabel={context.labels.code.copiedLabel}
+      codeLabel={context.labels.code.describeCode?.(lang, lines)}
+      speakLabel={context.labels.code.speakLabel}
+      onSpeak={context.onSpeakCode}
     />
   )
 }
