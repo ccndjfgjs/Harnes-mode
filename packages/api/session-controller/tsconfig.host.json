@@ -25,6 +25,7 @@
     { "path": "../../../vendor/schemastery" },
     { "path": "../../core/agent" },
     { "path": "../../core/agent-default-model" },
+    { "path": "../../core/draft-restructure-model" },
     { "path": "../../core/scope" },
     { "path": "../../core/session" },
     { "path": "../../context/file-reference" },

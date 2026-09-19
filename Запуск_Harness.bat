@@ -42,6 +42,18 @@ if exist "%USERPROFILE%\.dsh\.credentials.yaml.lock" (
   >>"%LOG%" echo [launcher] lock clear
 )
 
+rem --- 2a. убрать замок профилей: упавший запуск оставляет
+rem     %USERPROFILE%\.dsh\profiles\node_modules.lock (внутри номер уже
+rem     мертвого процесса), новый бэкенд ждет его и сдается с ошибкой
+rem     atomic-write timed out. Живых процессов в этот момент нет:
+rem     второе окно не запускается благодаря single-instance lock.
+del /f /q "%USERPROFILE%\.dsh\profiles\node_modules.lock" 2>nul
+if exist "%USERPROFILE%\.dsh\profiles\node_modules.lock" (
+  >>"%LOG%" echo [launcher] WARNING: profiles lock still present
+) else (
+  >>"%LOG%" echo [launcher] profiles lock clear
+)
+
 rem --- 3. зависимости на месте? -----------------------------------------------
 if not exist "node_modules\portfinder\package.json" goto :needinstall
 if not exist "node_modules\electron\package.json" goto :needinstall
