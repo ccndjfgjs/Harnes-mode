@@ -1,13 +1,18 @@
 @echo off
 setlocal
+rem Русские буквы в UTF-8: без этого консоль показывает кракозябры.
+chcp 65001 >nul
 rem ============================================================================
 rem  Запуск DeepSeek Harness — единственный батник запуска.
 rem
 rem  Что делает, по порядку:
 rem    1. Снимает защитные обертки WorkBuddy (без них приложение падает).
-rem    2. Убирает брошенный файл-замок, если остался от прошлого падения.
+rem    2. Убирает брошенные файлы-замки, если остались от прошлого падения.
 rem    3. Если зависимостей нет — ставит их (pnpm, при его отсутствии npm).
-rem    4. Запускает приложение; если бинарника нет — пробует запасной путь.
+rem    4. Если бэкенд не собран — собирает его (без сборки кнопка
+rem       запуска падает с "Local Harness CLI is missing").
+rem    5. Если бинарника Electron нет — пробует докачать его.
+rem    6. Запускает приложение; если бинарника всё ещё нет — запасной путь.
 rem
 rem  Почему снимаются обертки: окружение WorkBuddy подменяет удаление файлов
 rem  своей защитой и считает удаления. Приложение не может снять собственный
@@ -58,7 +63,7 @@ rem --- 3. зависимости на месте? -----------------------------
 if not exist "node_modules\portfinder\package.json" goto :needinstall
 if not exist "node_modules\electron\package.json" goto :needinstall
 >>"%LOG%" echo [launcher] dependency checks passed
-goto :launch
+goto :checkbuild
 
 :needinstall
 >>"%LOG%" echo [launcher] dependency checks FAILED -> install branch
@@ -77,9 +82,45 @@ if errorlevel 1 (
   exit /b 1
 )
 >>"%LOG%" echo [launcher] install done
-goto :launch
+goto :checkbuild
 
-rem --- 4. запуск --------------------------------------------------------------
+:checkbuild
+rem --- 4. сборка бэкенда (нужна свежему клону) --------------------------------
+rem Без apps\cli\lib\bin.js окно откроется, а кнопка "Запустить Harness"
+rem упадёт с "Local Harness CLI is missing. Run pnpm.cmd run build first."
+rem Проверка — по наличию файла, а не по коду возврата: так надёжнее.
+if exist "apps\cli\lib\bin.js" goto :builtok
+>>"%LOG%" echo [launcher] backend NOT built -> build branch
+echo [DeepSeek Harness] Первая сборка проекта, это займет несколько минут...
+where pnpm.cmd >nul 2>&1
+if %errorlevel%==0 (
+  call pnpm.cmd run build
+) else (
+  echo [DeepSeek Harness] pnpm не найден, пробую npm...
+  call npm run build
+)
+if not exist "apps\cli\lib\bin.js" (
+  >>"%LOG%" echo [launcher] build FAILED
+  echo [DeepSeek Harness] Не удалось собрать проект. Нужны Node.js 22+ и pnpm.
+  pause
+  exit /b 1
+)
+>>"%LOG%" echo [launcher] build done
+:builtok
+
+rem --- 5. бинарник Electron: postinstall мог его не докачать -------------------
+if exist "node_modules\electron\dist\electron.exe" goto :electronok
+>>"%LOG%" echo [launcher] electron.exe MISSING after install -> repair branch
+echo [DeepSeek Harness] Докачиваю Electron, это займет время...
+where pnpm.cmd >nul 2>&1
+if %errorlevel%==0 (
+  call pnpm.cmd rebuild electron
+) else (
+  call npm rebuild electron
+)
+:electronok
+
+rem --- 6. запуск --------------------------------------------------------------
 :launch
 rem Прямой electron.exe — оконное приложение: он не открывает лишнюю черную
 rem консоль (обертка npx ее показывает). npx — только запасной путь.
