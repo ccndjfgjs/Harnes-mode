@@ -64,7 +64,7 @@ if not exist "node_modules\electron\package.json" goto :needinstall
 goto :checkbuild
 
 :needinstall
->>"%LOG%" echo [launcher] dependency checks FAILED -> install branch
+>>"%LOG%" echo [launcher] dependency checks FAILED - install branch
 echo [DeepSeek Harness] Первый запуск: ставлю зависимости, это займет время...
 where pnpm.cmd >nul 2>&1
 if %errorlevel%==0 (
@@ -88,7 +88,7 @@ rem Без apps\cli\lib\bin.js окно откроется, а кнопка "З�
 rem упадёт с "Local Harness CLI is missing. Run pnpm.cmd run build first."
 rem Проверка — по наличию файла, а не по коду возврата: так надёжнее.
 if exist "apps\cli\lib\bin.js" goto :builtok
->>"%LOG%" echo [launcher] backend NOT built -> build branch
+>>"%LOG%" echo [launcher] backend NOT built - build branch
 echo [DeepSeek Harness] Первая сборка проекта, это займет несколько минут...
 where pnpm.cmd >nul 2>&1
 if %errorlevel%==0 (
@@ -108,7 +108,7 @@ if not exist "apps\cli\lib\bin.js" (
 
 rem --- 5. бинарник Electron: postinstall мог его не докачать -------------------
 if exist "node_modules\electron\dist\electron.exe" goto :electronok
->>"%LOG%" echo [launcher] electron.exe MISSING after install -> repair branch
+>>"%LOG%" echo [launcher] electron.exe MISSING after install - repair branch
 echo [DeepSeek Harness] Докачиваю Electron, это займет время...
 where pnpm.cmd >nul 2>&1
 if %errorlevel%==0 (
@@ -129,7 +129,7 @@ start "" "node_modules\electron\dist\electron.exe" electron/main.js
 exit
 
 :launchnpx
->>"%LOG%" echo [launcher] electron.exe MISSING -> npx fallback
+>>"%LOG%" echo [launcher] electron.exe MISSING - npx fallback
 echo [DeepSeek Harness] Бинарник Electron не найден, пробую через npx...
 start "" /b npx electron electron/main.js
 >>"%LOG%" echo [launcher] npx fallback issued
