@@ -112,6 +112,11 @@ contextBridge.exposeInMainWorld('harnessAPI', {
   a11ySettings: () => ipcRenderer.invoke('a11y-settings'),
   a11ySave: (patch) => ipcRenderer.invoke('a11y-save', patch && typeof patch === 'object' ? { enabled: patch.enabled === true } : {}),
 
+  // 2.9 Self-update: check the repo, hide one version, pull the new one.
+  updateCheck: () => ipcRenderer.invoke('update-check'),
+  updateSkip: (hash) => ipcRenderer.invoke('update-skip', String(hash || '')),
+  updateApply: () => ipcRenderer.invoke('update-apply'),
+
   // 3. Backend launch
   startHarness: (port) => ipcRenderer.send('start-harness', port),
 

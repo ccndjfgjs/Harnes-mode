@@ -1,6 +1,7 @@
 // electron/main.js — Seamless Single-Window Launcher
 const { app, BrowserWindow, desktopCapturer, ipcMain, powerSaveBlocker, screen, session } = require('electron');
-const { spawn } = require('child_process');
+const { execFile, spawn } = require('child_process');
+const { promisify } = require('node:util');
 const { existsSync, readFileSync, writeFileSync } = require('node:fs');
 const path = require('node:path');
 const { fileURLToPath } = require('node:url');
@@ -866,6 +867,110 @@ function writeLauncherA11y(patch) {
 secureHandle('a11y-settings', () => readLauncherA11y());
 
 secureHandle('a11y-save', (_event, patch) => writeLauncherA11y(patch || {}));
+
+// --- Self-update: check GitHub, describe, pull --------------------------------
+// "New version" means any new commit on origin/master. The window asks first
+// and shows the commit list; pulling never runs while the tree has tracked
+// changes (untracked scraps like logs cannot block it). After a pull the
+// built backend is stale, so its entry file is removed and the next launcher
+// run rebuilds it through the normal build branch.
+const UPDATE_STATE_FILENAME = 'launcher-update.json';
+const execFileAsync = promisify(execFile);
+
+function updateStatePath() {
+  try {
+    return path.join(app.getPath('userData'), UPDATE_STATE_FILENAME);
+  } catch {
+    return path.join(REPO_ROOT, 'electron', UPDATE_STATE_FILENAME);
+  }
+}
+
+function readUpdateState() {
+  try {
+    const raw = readFileSync(updateStatePath(), 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('bad document');
+    return { skippedCommit: typeof parsed.skippedCommit === 'string' ? parsed.skippedCommit : '' };
+  } catch {
+    return { skippedCommit: '' };
+  }
+}
+
+function writeUpdateState(patch) {
+  const next = { ...readUpdateState(), skippedCommit: String((patch && patch.skippedCommit) || '') };
+  try {
+    require('node:fs').mkdirSync(path.dirname(updateStatePath()), { recursive: true });
+  } catch {
+    // userData exists in practice; a missing dir fails loudly on write below.
+  }
+  writeFileSync(updateStatePath(), `${JSON.stringify(next, null, 2)}\n`, { mode: 0o600 });
+  return next;
+}
+
+function gitAsync(args, timeoutMs = 30000) {
+  return new Promise((resolve) => {
+    execFileAsync('git', args, { cwd: REPO_ROOT, timeout: timeoutMs, windowsHide: true })
+      .then(({ stdout }) => resolve({ ok: true, out: String(stdout || '') }))
+      .catch((err) => {
+        const detail = err && (err.stderr || err.stdout || err.message);
+        resolve({ ok: false, error: String(detail || err).split('\n')[0] });
+      });
+  });
+}
+
+function parseUpdateLog(out) {
+  return String(out || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [hash, date, ...rest] = line.split('|');
+      return { hash: String(hash || ''), short: String(hash || '').slice(0, 7), date: String(date || ''), subject: rest.join('|') };
+    })
+    .filter((entry) => /^[0-9a-f]{40}$/.test(entry.hash));
+}
+
+secureHandle('update-check', async () => {
+  const remote = await gitAsync(['ls-remote', 'origin', 'refs/heads/master']);
+  if (!remote.ok) throw new Error(`Не удалось спросить GitHub: ${remote.error}`);
+  const remoteHash = remote.out.trim().split(/\s+/)[0] || '';
+  if (!/^[0-9a-f]{40}$/.test(remoteHash)) throw new Error('GitHub ответил непонятно.');
+  const local = await gitAsync(['rev-parse', 'HEAD']);
+  const localHash = local.ok ? local.out.trim() : '';
+  if (remoteHash === localHash) return { upToDate: true, local: localHash, remote: remoteHash };
+  const fetched = await gitAsync(['fetch', 'origin', 'master'], 60000);
+  if (!fetched.ok) throw new Error(`Не удалось скачать описание: ${fetched.error}`);
+  const log = await gitAsync(['log', `${localHash}..FETCH_HEAD`, '--format=%H|%ad|%s', '--date=short', '--max-count=30']);
+  const commits = log.ok ? parseUpdateLog(log.out) : [];
+  return {
+    upToDate: false,
+    local: localHash,
+    remote: remoteHash,
+    commits,
+    skipped: readUpdateState().skippedCommit === remoteHash,
+  };
+});
+
+secureHandle('update-skip', (_event, hash) => writeUpdateState({ skippedCommit: String(hash || '') }));
+
+secureHandle('update-apply', async () => {
+  const status = await gitAsync(['status', '--porcelain', '--untracked-files=no']);
+  if (!status.ok) throw new Error(`Не удалось проверить папку: ${status.error}`);
+  if (status.out.trim() !== '') {
+    throw new Error('В папке есть несохранённые изменения — обновление отказался, чтобы их не потерять.');
+  }
+  const pulled = await gitAsync(['pull', '--ff-only', 'origin', 'master'], 120000);
+  if (!pulled.ok) throw new Error(`Не удалось подтянуть: ${pulled.error}`);
+  // The sources moved but the built files did not: drop the backend entry so
+  // the launcher rebuilds through its normal build branch on the next run.
+  try {
+    require('node:fs').unlinkSync(path.join(REPO_ROOT, 'apps', 'cli', 'lib', 'bin.js'));
+  } catch {
+    // Already unbuilt (fresh clone): the build branch handles it.
+  }
+  const head = await gitAsync(['rev-parse', 'HEAD']);
+  return { ok: true, head: head.ok ? head.out.trim() : '' };
+});
 
 // A pasted block may hold one link or a whole list, so the text is split first and
 // each line parsed: that is what makes "paste everything you copied" work.

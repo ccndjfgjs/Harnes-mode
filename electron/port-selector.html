@@ -387,6 +387,26 @@ textarea.input { resize: vertical; font-family: inherit; line-height: 1.5; }
     </div>
 
     <div id="gpuNotice" class="status hidden"></div>
+    <div class="section">
+      <div class="section-title">
+        <div><strong>Обновления</strong><p class="section-description" id="updateStatus">Пока не проверено</p></div>
+        <div class="section-controls">
+          <button id="checkUpdatesBtn" class="btn btn-inline" type="button">Проверить обновления</button>
+        </div>
+      </div>
+      <div id="updateDialog" class="advanced" hidden>
+        <div class="field">
+          <label class="server-list-label">Что нового</label>
+          <div id="updateList" class="server-list"></div>
+        </div>
+        <div class="actions">
+          <button id="applyUpdateBtn" class="btn" type="button">Обновиться</button>
+          <button id="laterUpdateBtn" class="btn" type="button">Не сейчас</button>
+          <button id="skipUpdateBtn" class="btn" type="button">Не предлагать это</button>
+        </div>
+        <div id="updateProgress" class="status"></div>
+      </div>
+    </div>
     <button id="launchBtn" class="launch" disabled>Запустить Harness</button>
     <div id="errorBox" class="error-box hidden"><span id="errorText"></span></div>
     <div id="launchOverlay" class="overlay hidden"><div class="spinner"></div><div id="overlayText">Запуск…</div></div>
@@ -400,6 +420,14 @@ const launchBtn = byId('launchBtn');
 const fullscreenToggle = byId('fullscreenToggle');
 const proxyEnabled = byId('proxyEnabled');
 const a11yToggle = byId('a11yToggle');
+const checkUpdatesBtn = byId('checkUpdatesBtn');
+const updateStatus = byId('updateStatus');
+const updateDialog = byId('updateDialog');
+const updateList = byId('updateList');
+const updateProgress = byId('updateProgress');
+const applyUpdateBtn = byId('applyUpdateBtn');
+const laterUpdateBtn = byId('laterUpdateBtn');
+const skipUpdateBtn = byId('skipUpdateBtn');
 const proxyFields = byId('proxyFields');
 const proxyStatus = byId('proxyStatus');
 const proxyInstallProgress = byId('proxyInstallProgress');
@@ -523,6 +551,114 @@ async function saveLauncherA11y(enabled) {
     if (!window.harnessAPI || typeof window.harnessAPI.a11ySave !== 'function') return;
     await window.harnessAPI.a11ySave({ enabled: enabled === true });
   } catch { /* выбор уже применён на экране */ }
+}
+
+// --- Обновления: проверка GitHub, вопрос, подтягивание ---------------------
+// «Новая версия» — любой новый коммит в master. Диалог показывает их список,
+// три исхода: обновиться, отложить, скрыть именно эту версию.
+let pendingUpdate = null;
+
+function setUpdateStatus(kind, text) {
+  setStatus(updateStatus, kind, text);
+}
+
+function setUpdateProgress(kind, text) {
+  setStatus(updateProgress, kind, text);
+}
+
+function hideUpdateDialog() {
+  pendingUpdate = null;
+  updateDialog.hidden = true;
+}
+
+async function checkUpdates() {
+  if (!window.harnessAPI || typeof window.harnessAPI.updateCheck !== 'function') {
+    setUpdateStatus('error', 'Оболочка слишком старая для проверки обновлений.');
+    return;
+  }
+  setUpdateStatus('scanning', 'Спрашиваю GitHub…');
+  checkUpdatesBtn.disabled = true;
+  hideUpdateDialog();
+  try {
+    const result = await window.harnessAPI.updateCheck();
+    const short = String(result.local || '').slice(0, 7);
+    if (result.upToDate) {
+      setUpdateStatus('ready', `У вас последняя версия (${short}).`);
+      speakA11y('У вас последняя версия.');
+      return;
+    }
+    if (result.skipped) {
+      setUpdateStatus('', 'Есть обновление, но вы его скрыли.');
+      speakA11y('Есть обновление, но вы его скрыли.');
+      return;
+    }
+    showUpdateDialog(result);
+  } catch (error) {
+    setUpdateStatus('error', readableError(error));
+    speakA11y('Не удалось проверить обновления.');
+  } finally {
+    checkUpdatesBtn.disabled = false;
+  }
+}
+
+function showUpdateDialog(result) {
+  pendingUpdate = result;
+  updateList.textContent = '';
+  const commits = Array.isArray(result.commits) ? result.commits : [];
+  if (commits.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'server-empty';
+    empty.textContent = 'Есть новые коммиты, но список пуст';
+    updateList.append(empty);
+  }
+  for (const commit of commits) {
+    const item = document.createElement('div');
+    item.className = 'server-item';
+    const text = document.createElement('div');
+    text.className = 'server-text';
+    const name = document.createElement('div');
+    name.className = 'server-name';
+    name.textContent = String(commit.subject || 'без описания');
+    const meta = document.createElement('div');
+    meta.className = 'server-meta';
+    meta.textContent = `${commit.short || ''} · ${commit.date || ''}`;
+    text.append(name, meta);
+    item.append(text);
+    updateList.append(item);
+  }
+  setUpdateProgress('', '');
+  updateDialog.hidden = false;
+  speakA11y(`Найдено обновление. Изменений: ${commits.length}.`);
+}
+
+async function applyUpdate() {
+  if (!pendingUpdate) return;
+  applyUpdateBtn.disabled = true;
+  laterUpdateBtn.disabled = true;
+  skipUpdateBtn.disabled = true;
+  setUpdateProgress('scanning', 'Подтягиваю обновление…');
+  try {
+    await window.harnessAPI.updateApply();
+    hideUpdateDialog();
+    setUpdateStatus('ready', 'Обновлено. Перезапустите окно через батник — он сам дособирает новое.');
+    speakA11y('Обновление установлено. Перезапустите окно через батник.');
+  } catch (error) {
+    setUpdateProgress('error', readableError(error));
+    speakA11y('Не удалось обновиться.');
+  } finally {
+    applyUpdateBtn.disabled = false;
+    laterUpdateBtn.disabled = false;
+    skipUpdateBtn.disabled = false;
+  }
+}
+
+async function skipUpdate() {
+  if (!pendingUpdate) return;
+  try {
+    await window.harnessAPI.updateSkip(pendingUpdate.remote);
+  } catch { /* скрытие — желание, а не обязанность */ }
+  hideUpdateDialog();
+  setUpdateStatus('', 'Скрыто. Напомню, когда выйдет следующее обновление.');
 }
 
 /**
@@ -930,6 +1066,12 @@ a11yToggle.addEventListener('change', () => {
   void saveLauncherA11y(on);
 });
 void loadLauncherA11y();
+
+// Обновления: кнопка проверки и три исхода диалога.
+checkUpdatesBtn.addEventListener('click', () => void checkUpdates());
+applyUpdateBtn.addEventListener('click', () => void applyUpdate());
+laterUpdateBtn.addEventListener('click', () => { hideUpdateDialog(); });
+skipUpdateBtn.addEventListener('click', () => void skipUpdate());
 
 // The in-app settings page edits that same file, so a link or a list added while
 // this window was closed would never be drawn here. Refreshing on focus makes the
