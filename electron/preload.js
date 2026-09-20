@@ -110,12 +110,18 @@ contextBridge.exposeInMainWorld('harnessAPI', {
   // The Harness-side merge below writes the same localStorage document the
   // Accessibility page edits, so the menu and the checkbox show one setting.
   a11ySettings: () => ipcRenderer.invoke('a11y-settings'),
-  a11ySave: (patch) => ipcRenderer.invoke('a11y-save', patch && typeof patch === 'object' ? { enabled: patch.enabled === true } : {}),
+  a11ySave: (patch) => ipcRenderer.invoke('a11y-save', patch && typeof patch === 'object'
+    ? { enabled: patch.enabled === true, speakPress: patch.speakPress === true, speakHover: patch.speakHover === true }
+    : {}),
 
   // 2.9 Self-update: check the repo, hide one version, pull the new one.
   updateCheck: () => ipcRenderer.invoke('update-check'),
   updateSkip: (hash) => ipcRenderer.invoke('update-skip', String(hash || '')),
   updateApply: () => ipcRenderer.invoke('update-apply'),
+  updateRollback: () => ipcRenderer.invoke('update-rollback'),
+
+  // 2.10 Fit the window to the selector content height (once at startup).
+  fitWindow: (height) => ipcRenderer.send('fit-window', Number(height) || 0),
 
   // 3. Backend launch
   startHarness: (port) => ipcRenderer.send('start-harness', port),
@@ -407,18 +413,28 @@ async function applyLauncherA11y() {
     const isHarnessUI = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     if (!isHarnessUI || document.getElementById('titlebar')) return;
     let enabled = false;
+    let speakHoverOn = false;
     try {
       const doc = await ipcRenderer.invoke('a11y-settings');
       enabled = Boolean(doc && doc.enabled === true);
+      speakHoverOn = Boolean(doc && doc.speakHover === true);
     } catch { return; }
     const current = launcherA11yReadJson(LAUNCHER_A11Y_DOC_KEY) || {};
     if (enabled) {
       if (!launcherA11yReadJson(LAUNCHER_A11Y_STASH_KEY)) {
         try {
-          localStorage.setItem(LAUNCHER_A11Y_STASH_KEY, JSON.stringify({ contrast: current.contrast, voiceNav: current.voiceNav }));
+          localStorage.setItem(LAUNCHER_A11Y_STASH_KEY, JSON.stringify({
+            contrast: current.contrast, voiceNav: current.voiceNav, voiceNavHover: current.voiceNavHover,
+          }));
         } catch { /* stash is best-effort */ }
       }
-      const next = { ...current, contrast: 'yellow', voiceNav: true };
+      // Суб-галочка наведения из запускальщика включает то же поле внутри.
+      const next = {
+        ...current,
+        contrast: 'yellow',
+        voiceNav: true,
+        ...(speakHoverOn ? { voiceNavHover: true } : {}),
+      };
       try { localStorage.setItem(LAUNCHER_A11Y_DOC_KEY, JSON.stringify(next)); } catch { /* page keeps its draft */ }
       launcherA11yProjectAttrs(next);
       return;
@@ -430,6 +446,8 @@ async function applyLauncherA11y() {
     else delete next.contrast;
     if (typeof stash.voiceNav === 'boolean') next.voiceNav = stash.voiceNav;
     else delete next.voiceNav;
+    if (typeof stash.voiceNavHover === 'boolean') next.voiceNavHover = stash.voiceNavHover;
+    else delete next.voiceNavHover;
     try { localStorage.setItem(LAUNCHER_A11Y_DOC_KEY, JSON.stringify(next)); } catch { /* page keeps its draft */ }
     try { localStorage.removeItem(LAUNCHER_A11Y_STASH_KEY); } catch { /* stale stash is harmless */ }
     launcherA11yProjectAttrs(next);

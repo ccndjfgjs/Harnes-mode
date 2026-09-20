@@ -25,13 +25,13 @@ test('sensitive IPC registrations use the centralized sender guard', () => {
     'v2ray-install-core', 'v2ray-remove-core', 'v2ray-settings', 'v2ray-save', 'v2ray-import-link',
     'v2ray-import-subscription', 'v2ray-select', 'v2ray-remove', 'is-maximized',
     'is-fullscreen', 'get-app-icon', 'a11y-settings', 'a11y-save',
-    'update-check', 'update-skip', 'update-apply',
+    'update-check', 'update-skip', 'update-apply', 'update-rollback',
   ];
   for (const channel of handleChannels) {
     assert.match(mainSource, new RegExp(`secureHandle\\('${channel}'`), channel);
   }
 
-  for (const channel of ['selector-ready', 'start-harness', 'toggle-fullscreen', 'screen-broadcast', 'window-minimize', 'window-maximize', 'window-close']) {
+  for (const channel of ['selector-ready', 'start-harness', 'toggle-fullscreen', 'screen-broadcast', 'window-minimize', 'window-maximize', 'window-close', 'fit-window']) {
     assert.match(mainSource, new RegExp(`secureOn\\('${channel}'`), channel);
   }
   assert.match(mainSource, /ipcMain: \{ handle: \(channel, handler\) => secureHandle\(channel, handler\) \}/);
@@ -44,6 +44,20 @@ test('capture permissions are restricted to trusted local media requests', () =>
   assert.doesNotMatch(mainSource, /setPermissionCheckHandler\(\(\) => true\)/);
   assert.doesNotMatch(mainSource, /setPermissionRequestHandler\([^]*callback\(true\)/);
   assert.match(mainSource, /request\?\.frame === mainWindow\?\.webContents\?\.mainFrame/);
+});
+
+test('network git failures are told apart from repo problems', () => {
+  const functionSource = mainSource.match(/function isNetworkGitError\(result\) \{[\s\S]*?\n\}/)?.[0];
+  assert.ok(functionSource);
+  const context = {};
+  vm.runInNewContext(`${functionSource}; globalThis.isNet = isNetworkGitError;`, context);
+  assert.equal(context.isNet({ ok: false, error: 'x', timeout: true }), true, 'убитая по таймауту команда — сеть');
+  assert.equal(context.isNet({ ok: false, error: 'Could not resolve host: github.com' }), true);
+  assert.equal(context.isNet({ ok: false, error: 'schannel: failed to receive handshake, SSL/TLS connection failed' }), true);
+  assert.equal(context.isNet({ ok: false, error: "fatal: unable to access 'http://10.0.0.1/x.git/': Empty reply from server" }), true);
+  assert.equal(context.isNet({ ok: false, error: "Failed to connect to github.com port 443: Timed out" }), true);
+  assert.equal(context.isNet({ ok: false, error: 'Command failed: git fetch origin master' }), false, 'голая ошибка без признаков сети — не сеть');
+  assert.equal(context.isNet({ ok: false, error: 'bad revision' }), false);
 });
 
 test('backend token is masked only in logs while the captured URL stays intact', () => {

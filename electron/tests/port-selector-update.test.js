@@ -29,10 +29,13 @@ const commit = (hash, date, subject) => ({ hash, short: hash.slice(0, 7), date, 
 async function mount(check) {
   const calls = []
   const spoken = []
+  const captured = {}
   const state = { skipped: '' }
 
   const bridge = {
-    onReady: () => {},
+    // Колбэк готовности приходит сам (как в настоящем окне после загрузки):
+    // именно оттуда стартует тихая автопроверка.
+    onReady: (callback) => { captured.ready = callback; setTimeout(() => { try { callback(3101, false); } catch {} }, 0) },
     onFullscreenChanged: () => {},
     onMaximizeChanged: () => {},
     onMaximizedChanged: () => {},
@@ -76,6 +79,11 @@ async function mount(check) {
       calls.push(['updateApply'])
       if (check && check.applyFails) throw new Error(check.applyFails)
       return { ok: true, head: 'fedcba9876543210fedcba9876543210fedcba98' }
+    },
+    updateRollback: async () => {
+      calls.push(['updateRollback'])
+      if (check && check.rollbackFails) throw new Error(check.rollbackFails)
+      return { ok: true, head: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', previous: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }
     },
   }
 
@@ -130,15 +138,38 @@ test('new commits open the dialog with their list', async () => {
     assert.equal(rows.length, 2, 'оба коммита должны быть в списке')
     assert.match(rows[0].querySelector('.server-name').textContent, /Галочка доступности/)
     assert.match(rows[0].querySelector('.server-meta').textContent, /1111111 · 2026-09-20/)
+    assert.match(env.byId('updateStatus').textContent, /Найдено обновлений: 2/)
+    assert.ok(!env.byId('updateStatus').className.includes('scanning'), 'кольцо должно остановиться')
   } finally { env.close() }
 })
 
-test('a skipped version stays hidden', async () => {
+test('a skipped version still opens on manual check, with a note', async () => {
   const env = await mount({ upToDate: false, local: 'old', remote: 'new', commits: [], skipped: true })
   try {
+    // Автопроверка при входе скрытое не показывает — сбрасываем её след...
+    env.byId('updateDialog').hidden = true
     env.click(env.byId('checkUpdatesBtn'))
     await settle()
-    assert.equal(env.byId('updateDialog').hidden, true, 'скрытое не показываем')
+    assert.equal(env.byId('updateDialog').hidden, false, 'вручную спросили — показываем даже скрытое')
+    assert.equal(env.byId('updateSkippedNote').hidden, false, 'с пометкой что скрывали')
+  } finally { env.close() }
+})
+
+test('opening the window auto-checks: new and unskipped proposes itself', async () => {
+  const commits = [commit('1111111000000000000000000000000000000000', '2026-09-20', 'Галочка доступности')]
+  const env = await mount({ upToDate: false, local: 'old', remote: 'new', commits, skipped: false })
+  try {
+    // Без единого клика: автопроверка при входе сама открыла диалог.
+    assert.equal(env.byId('updateDialog').hidden, false, 'новое и нескрытое предлагается само')
+    assert.equal(env.byId('updateList').querySelectorAll('.server-item').length, 1)
+  } finally { env.close() }
+})
+
+test('opening the window auto-checks: skipped stays silent', async () => {
+  const commits = [commit('1111111000000000000000000000000000000000', '2026-09-20', 'Галочка доступности')]
+  const env = await mount({ upToDate: false, local: 'old', remote: 'new', commits, skipped: true })
+  try {
+    assert.equal(env.byId('updateDialog').hidden, true, 'скрытое при входе молчит')
     assert.match(env.byId('updateStatus').textContent, /скрыли/)
   } finally { env.close() }
 })
@@ -195,12 +226,65 @@ test('later just closes, skip remembers the version', async () => {
   } finally { env.close() }
 })
 
-test('no network reports instead of opening the dialog', async () => {
-  const env = await mount(new Error("Error invoking remote method 'update-check': Error: Не удалось спросить GitHub: boom"))
+test('no network reports instead of opening the dialog', async () => {  const env = await mount(new Error("Error invoking remote method 'update-check': Error: Не удалось спросить GitHub: нет сети. Попробуйте ещё раз."))
   try {
     env.click(env.byId('checkUpdatesBtn'))
     await settle()
     assert.equal(env.byId('updateDialog').hidden, true)
-    assert.match(env.byId('updateStatus').textContent, /Не удалось спросить GitHub/)
+    assert.match(env.byId('updateStatus').textContent, /нет сети/)
+  } finally { env.close() }
+})
+
+test('a hanging check says the network is slow instead of spinning silently', async () => {
+  const env = await mount(new Promise(() => {}))
+  try {
+    env.click(env.byId('checkUpdatesBtn'))
+    await settle()
+    assert.match(env.byId('updateStatus').textContent, /Спрашиваю GitHub/)
+    await new Promise((resolve) => { setTimeout(resolve, 9500) })
+    assert.match(env.byId('updateStatus').textContent, /медленная/, 'долгое молчание надо объяснять')
+  } finally { env.close() }
+})
+
+test('rollback offers the remembered version', async () => {
+  const prev = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+  const env = await mount({ upToDate: true, local: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', remote: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', previous: prev })
+  try {
+    // Автопроверка при входе уже подтянула состояние кнопки.
+    assert.equal(env.byId('rollbackUpdateBtn').disabled, false, 'кнопка доступна')
+    assert.match(env.byId('rollbackStatus').textContent, /bbbbbbb/)
+  } finally { env.close() }
+})
+
+test('rollback without a remembered version stays unavailable', async () => {
+  const env = await mount({ upToDate: true, local: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', remote: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' })
+  try {
+    assert.equal(env.byId('rollbackUpdateBtn').disabled, true, 'откатывать некуда')
+    assert.equal(env.byId('rollbackStatus').hidden, true)
+  } finally { env.close() }
+})
+
+test('rollback returns the code and asks for a relaunch', async () => {
+  const prev = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+  const env = await mount({ upToDate: true, local: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', remote: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', previous: prev })
+  try {
+    env.click(env.byId('rollbackUpdateBtn'))
+    await settle()
+    assert.ok(env.calls.some(([name]) => name === 'updateRollback'), 'окно должно попросить откат')
+    assert.match(env.byId('updateStatus').textContent, /Откачено на aaaaaaa/)
+    assert.match(env.byId('updateStatus').textContent, /Перезапустите/)
+  } finally { env.close() }
+})
+
+test('a refused rollback reports and keeps the button alive', async () => {
+  const prev = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+  const env = await mount({
+    upToDate: true, local: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', remote: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    previous: prev, rollbackFails: 'В папке есть несохранённые изменения',
+  })
+  try {
+    env.click(env.byId('rollbackUpdateBtn'))
+    await settle()
+    assert.match(env.byId('updateStatus').textContent, /несохранённые/)
   } finally { env.close() }
 })

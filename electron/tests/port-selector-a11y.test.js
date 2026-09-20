@@ -27,11 +27,11 @@ const settle = async () => {
  * @param enabled - the saved checkbox the shell should open on.
  * @param withA11yBridge - when false the shell predates the checkbox (compat).
  */
-async function mount(enabled = false, withA11yBridge = true) {
+async function mount(enabled = false, withA11yBridge = true, url = null) {
   const calls = []
   const spoken = []
   const captured = {}
-  const state = { enabled }
+  const state = { enabled, speakPress: false, speakHover: false }
 
   const bridge = {
     onReady: (callback) => { captured.ready = callback },
@@ -62,18 +62,25 @@ async function mount(enabled = false, withA11yBridge = true) {
     v2rayInstallCore: async () => ({ ok: true, status: { binaryAvailable: true } }),
     v2rayRemoveCore: async () => ({ ok: true, status: { binaryAvailable: false } }),
     onV2RayInstallProgress: () => () => {},
+    fitWindow: (height) => { calls.push(['fitWindow', height]) },
   }
   if (withA11yBridge) {
-    bridge.a11ySettings = async () => { calls.push(['a11ySettings']); return { enabled: state.enabled } }
+    bridge.a11ySettings = async () => {
+      calls.push(['a11ySettings'])
+      return { enabled: state.enabled, speakPress: state.speakPress, speakHover: state.speakHover }
+    }
     bridge.a11ySave = async (patch) => {
       calls.push(['a11ySave', patch])
       state.enabled = patch && patch.enabled === true
-      return { enabled: state.enabled }
+      state.speakPress = patch && patch.speakPress === true
+      state.speakHover = patch && patch.speakHover === true
+      return { enabled: state.enabled, speakPress: state.speakPress, speakHover: state.speakHover }
     }
   }
 
   const dom = new JSDOM(HTML, {
     runScripts: 'dangerously',
+    url: url || 'http://localhost/launcher/',
     beforeParse(window) {
       window.harnessAPI = bridge
       window.SpeechSynthesisUtterance = function (text) {
@@ -180,5 +187,212 @@ test('an older shell without the checkbox methods does not break the window', as
     env.setChecked(env.byId('a11yToggle'), true)
     await settle()
     assert.equal(env.win.document.documentElement.getAttribute('data-launcher-a11y'), 'yellow', 'тема работает и без сохранения')
+  } finally { env.close() }
+})
+
+test('sub-checkboxes live only under the master one', async () => {
+  const env = await mount(false)
+  try {
+    assert.equal(env.byId('a11ySpeakPress').disabled, true, 'без мастера суб-галочки закрыты')
+    assert.equal(env.byId('a11ySpeakHover').disabled, true)
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    assert.equal(env.byId('a11ySpeakPress').disabled, false, 'с мастером открыты')
+    assert.equal(env.byId('a11ySpeakHover').disabled, false)
+    env.setChecked(env.byId('a11yToggle'), false)
+    await settle()
+    assert.equal(env.byId('a11ySpeakPress').disabled, true, 'мастер выключен — снова закрыты')
+  } finally { env.close() }
+})
+
+test('a sub-checkbox saves all three fields', async () => {
+  const env = await mount(false)
+  try {
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    env.setChecked(env.byId('a11ySpeakHover'), true)
+    await settle()
+    const saves = env.calls.filter(([name]) => name === 'a11ySave')
+    const last = saves[saves.length - 1][1]
+    assert.equal(last.enabled, true)
+    assert.equal(last.speakHover, true, 'ховер должен сохраниться')
+    assert.equal(last.speakPress, false)
+    assert.ok(env.spoken.some((line) => line.includes('Озвучка наведения включена')), 'переключение надо проговорить')
+  } finally { env.close() }
+})
+
+test('hovering a button speaks what it does', async () => {
+  const env = await mount(false)
+  try {
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    env.setChecked(env.byId('a11ySpeakHover'), true)
+    await settle()
+    const before = env.spoken.length
+    env.byId('checkUpdatesBtn').dispatchEvent(new env.win.MouseEvent('mouseover', { bubbles: true, cancelable: true }))
+    await settle()
+    const fresh = env.spoken.slice(before)
+    assert.ok(fresh.some((line) => line.includes('Проверить обновления')), 'название кнопки надо проговорить')
+  } finally { env.close() }
+})
+
+test('hover stays silent without its sub-checkbox', async () => {
+  const env = await mount(false)
+  try {
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    const before = env.spoken.length
+    env.byId('checkUpdatesBtn').dispatchEvent(new env.win.MouseEvent('mouseover', { bubbles: true, cancelable: true }))
+    await settle()
+    assert.equal(env.spoken.length, before, 'без суб-галочки ховер молчит')
+  } finally { env.close() }
+})
+
+test('focusing a field speaks its label and the whole value', async () => {
+  const env = await mount(false)
+  try {
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    env.setChecked(env.byId('a11ySpeakPress'), true)
+    await settle()
+    const longValue = `vless://${'a'.repeat(300)}@example.com:443`
+    env.byId('proxyLinkInput').value = longValue
+    env.byId('proxyLinkInput').dispatchEvent(new env.win.Event('focusin', { bubbles: true, cancelable: true }))
+    await settle()
+    const fresh = env.spoken.join('\n')
+    assert.ok(fresh.includes('Ссылка на сервер'), 'подпись поля надо проговорить')
+    assert.ok(fresh.includes(longValue), 'значение поля — целиком, без обрезки')
+  } finally { env.close() }
+})
+
+test('clicking a block speaks it, clicking its button does not double', async () => {  const env = await mount(false)
+  try {
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    env.setChecked(env.byId('a11ySpeakPress'), true)
+    await settle()
+    const before = env.spoken.length
+    env.byId('launchBtn').dispatchEvent(new env.win.MouseEvent('click', { bubbles: true, cancelable: true }))
+    await settle()
+    assert.equal(env.spoken.length, before, 'у кнопки свой голос, блок за неё не говорит')
+    const desc = env.byId('updateStatus')
+    desc.dispatchEvent(new env.win.MouseEvent('click', { bubbles: true, cancelable: true }))
+    await settle()
+    const fresh = env.spoken.slice(before).join('\n')
+    assert.ok(fresh.includes('Обновления'), 'текст блока надо проговорить')
+    assert.ok(fresh.includes('Пока не проверено'), 'блок идёт целиком')
+  } finally { env.close() }
+})
+
+test('the sub-checkbox hitbox ends at its text', async () => {
+  const env = await mount(false)
+  try {
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    env.setChecked(env.byId('a11ySpeakPress'), true)
+    await settle()
+    // Клик по самому тексту включает через родное поведение подписи.
+    const span = env.win.document.querySelector('label.a11y-sub span')
+    span.dispatchEvent(new env.win.MouseEvent('click', { bubbles: true, cancelable: true }))
+    await settle()
+    assert.equal(env.byId('a11ySpeakPress').checked, false, 'клик по тексту щёлкает галочку')
+    // А в стилях хитбокс ужаты до текста, а не на всю ширину блока.
+    const css = Array.from(env.win.document.querySelectorAll('style')).map((el) => el.textContent).join('\n')
+    assert.ok(/\.a11y-sub\s*\{[^}]*width:\s*fit-content/.test(css), 'хитбокс суб-галочек — по конец текста')
+  } finally { env.close() }
+})
+
+test('clicking a label does not double-speak the block', async () => {
+  const env = await mount(false)
+  try {
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    env.setChecked(env.byId('a11ySpeakPress'), true)
+    await settle()
+    env.byId('portInput').dispatchEvent(new env.win.Event('focusin', { bubbles: true, cancelable: true }))
+    await settle()
+    const before = env.spoken.length
+    const label = env.win.document.querySelector('label[for="portInput"]')
+    label.dispatchEvent(new env.win.MouseEvent('click', { bubbles: true, cancelable: true }))
+    await settle()
+    const fresh = env.spoken.slice(before)
+    // Повтор той же фразы душит защита от дублей; чужой блок молчит в любом случае.
+    assert.ok(!fresh.some((line) => line.includes('Подключить V2Ray')), 'чужой блок молчит')
+    assert.ok(fresh.length <= 1, 'не больше одного голоса за клик')
+  } finally { env.close() }
+})
+test('switches announce themselves', async () => {
+  const env = await mount(false)
+  try {
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    env.setChecked(env.byId('proxyEnabled'), true)
+    await settle()
+    assert.ok(env.spoken.some((line) => line.includes('Туннель включён')), 'переключатель туннеля слышно')
+    env.setChecked(env.byId('proxyEnabled'), false)
+    await settle()
+    assert.ok(env.spoken.some((line) => line.includes('Туннель выключен')), 'и выключение тоже')
+  } finally { env.close() }
+})
+
+test('the window asks the shell to fit its content once ready', async () => {
+  const env = await mount(false)
+  try {
+    env.captured.ready(3101, false)
+    await new Promise((resolve) => { setTimeout(resolve, 800) })
+    const fits = env.calls.filter(([name]) => name === 'fitWindow')
+    assert.equal(fits.length, 1, 'подгонка — один раз')
+    assert.ok(typeof fits[0][1] === 'number' && fits[0][1] > 0, 'высота — число')
+  } finally { env.close() }
+})
+
+test('hover jitter across empty space does not repeat the voice', async () => {
+  const env = await mount(false)
+  try {
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    env.setChecked(env.byId('a11ySpeakHover'), true)
+    await settle()
+    const btn = env.byId('checkUpdatesBtn')
+    const plain = env.win.document.querySelector('.dialog .brand .subtitle')
+    const hover = (el) => el.dispatchEvent(new env.win.MouseEvent('mouseover', { bubbles: true, cancelable: true }))
+    hover(btn)
+    await settle()
+    const afterFirst = env.spoken.length
+    assert.ok(afterFirst > 0, 'первое наведение говорит')
+    hover(plain)
+    await settle()
+    hover(btn)
+    await settle()
+    assert.equal(env.spoken.length, afterFirst, 'ёрзанье туда-сюда молчит')
+    // Пауза ключа ховера — 1.5с, голоса — 5с: ждём обе, возврат говорит снова.
+    await new Promise((resolve) => { setTimeout(resolve, 5600) })
+    hover(btn)
+    await settle()
+    assert.ok(env.spoken.length > afterFirst, 'осознанный возврат через паузу говорит снова')
+  } finally { env.close() }
+})
+
+test('hovering a field speaks its label and value', async () => {
+  const env = await mount(false)
+  try {
+    env.setChecked(env.byId('a11yToggle'), true)
+    await settle()
+    env.setChecked(env.byId('a11ySpeakHover'), true)
+    await settle()
+    env.byId('proxyHost').value = 'proxy.example.com'
+    env.byId('proxyHost').dispatchEvent(new env.win.MouseEvent('mouseover', { bubbles: true, cancelable: true }))
+    await settle()
+    const fresh = env.spoken.join('\n')
+    assert.ok(fresh.includes('Сервер'), 'подпись поля надо проговорить')
+    assert.ok(fresh.includes('proxy.example.com'), 'значение поля тоже')
+  } finally { env.close() }
+})
+
+test('the gpu notice is spoken when it shows', async () => {
+  const env = await mount(true, true, 'http://localhost/launcher/?gpu=crash')
+  try {
+    await settle()
+    assert.ok(env.spoken.some((line) => line.includes('GPU')), 'плашку про GPU надо проговорить')
   } finally { env.close() }
 })

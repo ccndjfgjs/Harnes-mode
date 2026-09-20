@@ -94,7 +94,12 @@ h1 { margin: 0; font-size: 24px; letter-spacing: -.03em; }
               background-color var(--l-motion-base) var(--l-ease-standard);
 }
 .section:hover { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.035); }
-.section-title { display: flex; justify-content: space-between; align-items: center; gap: var(--l-space-4); }
+.section-title { display: flex; justify-content: space-between; align-items: center; gap: var(--l-space-4); flex-wrap: wrap; }
+/* Текстовый блок занимает свободное место, но не уже 160px: в тесноте
+   (как V2Ray с двумя кнопками) контролы уходят строкой ниже, а текст —
+   на всю ширину вместо колонки по слову. Контролы не растягиваются. */
+.section-title > div:first-child { flex: 1 1 160px; min-width: 0; }
+.section-controls, .section-title > label.switch { flex: 0 0 auto; }
 .section-title strong { font-size: 14px; }
 .section-description { margin: var(--l-space-1) 0 0; color: var(--muted); font-size: 12px; }
 .section-controls { display: flex; align-items: center; gap: var(--l-space-2); }
@@ -214,6 +219,16 @@ textarea.input { resize: vertical; font-family: inherit; line-height: 1.5; }
 }
 .error-box { margin-top: var(--l-space-3); padding: var(--l-space-3); border: 1px solid rgba(240,109,114,.5); border-radius: var(--l-radius-md); color: #ffacb0; background: rgba(240,109,114,.08); animation: notice-in var(--l-motion-slow) var(--l-ease-emphasized) both; }
 .hidden { display: none !important; }
+/* Суб-переключатели доступной версии: тише и с отступом, гаснут без мастера. */
+/* Суб-переключатели доступной версии: тише и с отступом, гаснут без мастера.
+   Хитбокс — ровно по конец текста (fit-content), а не на всю ширину блока:
+   клик по пустому месту мимо них не щёлкает. */
+.a11y-sub { display: flex; width: fit-content; max-width: 100%; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); cursor: pointer; }
+.a11y-sub input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--brand); cursor: pointer; }
+.a11y-sub.dimmed { opacity: .45; }
+.a11y-sub.dimmed input { cursor: not-allowed; }
+/* Подписи полей — тот же принцип: кликабельны по текст, а не по пустоте. */
+.field > label { width: fit-content; max-width: 100%; }
 /* Доступная версия: чёрно-жёлтая тема стартового окна. Включается атрибутом
    data-launcher-a11y='yellow' на корне — тем же именем значения, что у
    контрастной темы меню «Специальные возможности» внутри Харнеса. */
@@ -294,92 +309,105 @@ textarea.input { resize: vertical; font-family: inherit; line-height: 1.5; }
 <header id="titlebar">
   <div class="titlebar-left"><span id="titlebarIconFallback" class="titlebar-placeholder"></span><img id="titlebarIcon" class="titlebar-icon hidden" alt=""><span>DeepSeek Harness</span></div>
   <div class="titlebar-controls">
-    <button id="btnMin" class="titlebar-btn" title="Свернуть" aria-label="Свернуть">&#8211;</button>
-    <button id="btnMax" class="titlebar-btn" title="Развернуть" aria-label="Развернуть">&#9723;</button>
-    <button id="btnClose" class="titlebar-btn" title="Закрыть" aria-label="Закрыть">&#10005;</button>
+    <button id="btnMin" class="titlebar-btn" data-i18n-title="title.min" data-i18n-aria="title.min" title="Свернуть" aria-label="Свернуть">&#8211;</button>
+    <button id="btnMax" class="titlebar-btn" data-i18n-title="title.max" data-i18n-aria="title.max" title="Развернуть" aria-label="Развернуть">&#9723;</button>
+    <button id="btnClose" class="titlebar-btn" data-i18n-title="title.close" data-i18n-aria="title.close" title="Закрыть" aria-label="Закрыть">&#10005;</button>
   </div>
 </header>
 <main class="page">
   <section class="dialog" aria-labelledby="launcherTitle">
     <div class="brand">
       <div id="brandFallback" class="brand-placeholder"></div>
-      <img id="brandIcon" class="brand-logo hidden" alt="Логотип DeepSeek Harness">
+      <img id="brandIcon" class="brand-logo hidden" data-i18n-alt="brand.alt" alt="Логотип DeepSeek Harness">
       <h1 id="launcherTitle">DeepSeek Harness</h1>
-      <p class="subtitle">Настройте локальный запуск приложения</p>
+      <p class="subtitle" data-i18n="app.subtitle">Настройте локальный запуск приложения</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <div><strong data-i18n="lang.title">Язык</strong><p class="section-description" data-i18n="lang.desc">Язык окна и голосовых подсказок</p></div>
+        <div class="section-controls" role="group" aria-label="Language">
+          <button id="langRu" class="btn btn-inline" type="button">Русский</button>
+          <button id="langEn" class="btn btn-inline" type="button">English</button>
+          <button id="langZh" class="btn btn-inline" type="button">中文</button>
+        </div>
+      </div>
     </div>
 
     <div class="section">
       <div class="grid">
         <div class="field">
-          <label for="portInput">Порт локального сервера</label>
-          <input id="portInput" class="input" type="number" min="1" max="65535" placeholder="Автопоиск" disabled>
+          <label for="portInput" data-i18n="port.label">Порт локального сервера</label>
+          <input id="portInput" class="input" type="number" min="1" max="65535" data-i18n-ph="port.auto" placeholder="Автопоиск" disabled>
         </div>
         <div class="section-title">
-          <div><strong>Полный экран</strong><p class="section-description">Открыть Harness во весь экран</p></div>
+          <div><strong data-i18n="port.fullscreen">Полный экран</strong><p class="section-description" data-i18n="port.fullscreen.desc">Открыть Harness во весь экран</p></div>
           <label class="switch"><input id="fullscreenToggle" type="checkbox" disabled><span></span></label>
         </div>
       </div>
-      <div id="portStatus" class="status scanning">Поиск свободного порта…</div>
+      <div id="portStatus" class="status scanning" data-i18n="port.scanning">Поиск свободного порта…</div>
     </div>
 
     <div class="section">
       <div class="section-title">
-        <div><strong>Доступная версия</strong><p class="section-description">Чёрно-жёлтая тема и голосовые подсказки — та же настройка, что в меню «Специальные возможности»</p></div>
+        <div><strong data-i18n="a11y.title">Доступная версия</strong><p class="section-description" data-i18n="a11y.desc">Чёрно-жёлтая тема и голосовые подсказки — та же настройка, что в меню «Специальные возможности»</p></div>
         <label class="switch"><input id="a11yToggle" type="checkbox"><span></span></label>
       </div>
+      <label class="a11y-sub"><input id="a11ySpeakPress" type="checkbox" disabled><span data-i18n="a11y.sub.press">Озвучивать при нажатии: блоки — целиком, поля — полностью</span></label>
+      <label class="a11y-sub"><input id="a11ySpeakHover" type="checkbox" disabled><span data-i18n="a11y.sub.hover">Озвучивать при наведении: что делает кнопка или переключатель</span></label>
     </div>
 
     <div class="section">
       <div class="section-title">
-        <div><strong>Подключить V2Ray</strong><p class="section-description">Пустить запросы Harness через ваш сервер — вставьте ссылку или список серверов</p></div>
+        <div><strong data-i18n="vpn.title">Подключить V2Ray</strong><p class="section-description" data-i18n="vpn.desc">Пустить запросы Harness через ваш сервер — вставьте ссылку или список серверов</p></div>
         <div class="section-controls">
           <button id="installProxyCoreBtn" class="btn btn-inline" type="button">Установить V2Ray (движок)</button>
           <button id="removeProxyCoreBtn" class="btn btn-inline btn-danger" type="button" hidden>Удалить V2Ray</button>
           <label class="switch"><input id="proxyEnabled" type="checkbox"><span></span></label>
         </div>
       </div>
-      <div class="status">Установка скачивает движок туннеля (v2ray.exe), удаление — убирает его с компьютера. Список серверов при удалении не трогается.</div>
+      <div class="status" data-i18n="vpn.explainer">Установка скачивает движок туннеля (v2ray.exe), удаление — убирает его с компьютера. Список серверов при удалении не трогается.</div>
       <div id="proxyFields" hidden>
         <div class="field">
-          <label for="proxyLinkInput">Ссылка на сервер</label>
-          <textarea id="proxyLinkInput" class="input" rows="2" placeholder="vless://… — можно вставить сразу несколько ссылок, каждая с новой строки" autocomplete="off"></textarea>
+          <label for="proxyLinkInput" data-i18n="vpn.link">Ссылка на сервер</label>
+          <textarea id="proxyLinkInput" class="input" rows="2" data-i18n-ph="vpn.link.ph" placeholder="vless://… — можно вставить сразу несколько ссылок, каждая с новой строки" autocomplete="off"></textarea>
         </div>
-        <div class="actions"><button id="addLinkBtn" class="btn" type="button">Добавить в список</button></div>
+        <div class="actions"><button id="addLinkBtn" class="btn" type="button" data-i18n="vpn.add">Добавить в список</button></div>
 
         <div class="field">
-          <label for="proxySubUrl">Ссылка на список серверов (подписка)</label>
-          <input id="proxySubUrl" class="input" placeholder="https://…" autocomplete="off">
+          <label for="proxySubUrl" data-i18n="vpn.sub">Ссылка на список серверов (подписка)</label>
+          <input id="proxySubUrl" class="input" data-i18n-ph="vpn.sub.ph" placeholder="https://…" autocomplete="off">
         </div>
-        <div class="actions"><button id="loadSubBtn" class="btn" type="button">Загрузить список</button></div>
+        <div class="actions"><button id="loadSubBtn" class="btn" type="button" data-i18n="vpn.load">Загрузить список</button></div>
 
         <div id="proxyServersWrap" class="advanced" hidden>
-          <label class="server-list-label">Серверы</label>
+          <label class="server-list-label" data-i18n="vpn.servers">Серверы</label>
           <div id="proxyServers" class="server-list"></div>
         </div>
 
         <details id="proxyAdvanced" class="advanced">
-          <summary>Дополнительные параметры</summary>
+          <summary data-i18n="vpn.advanced">Дополнительные параметры</summary>
           <div class="grid">
-            <div class="field"><label for="proxyHost">Сервер</label><input id="proxyHost" class="input" placeholder="proxy.example.com" autocomplete="off"></div>
-            <div class="field"><label for="proxyRemotePort">Порт сервера</label><input id="proxyRemotePort" class="input" type="number" value="443" min="1" max="65535"></div>
-            <div class="field"><label for="proxyUuid">UUID VLESS</label><input id="proxyUuid" class="input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off"></div>
-            <div class="field"><label for="proxyLocalPort">Локальный SOCKS5</label><input id="proxyLocalPort" class="input" type="number" value="10808" min="1" max="65535"></div>
-            <div class="field"><label for="proxyHttpPort">Локальный HTTP (для Harness)</label><input id="proxyHttpPort" class="input" type="number" value="10809" min="1" max="65535"></div>
-            <div class="field"><label for="proxyTransport">Транспорт</label><select id="proxyTransport" class="input"><option value="tcp">TCP</option><option value="ws">WebSocket</option><option value="grpc">gRPC</option></select></div>
-            <div class="field"><label for="proxySecurity">Защита</label><select id="proxySecurity" class="input"><option value="tls">TLS</option><option value="reality">Reality</option><option value="none">Без TLS</option></select></div>
+            <div class="field"><label for="proxyHost" data-i18n="vpn.host">Сервер</label><input id="proxyHost" class="input" data-i18n-ph="vpn.host.ph" placeholder="proxy.example.com" autocomplete="off"></div>
+            <div class="field"><label for="proxyRemotePort" data-i18n="vpn.rport">Порт сервера</label><input id="proxyRemotePort" class="input" type="number" value="443" min="1" max="65535"></div>
+            <div class="field"><label for="proxyUuid" data-i18n="vpn.uuid">UUID VLESS</label><input id="proxyUuid" class="input" data-i18n-ph="vpn.uuid.ph" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off"></div>
+            <div class="field"><label for="proxyLocalPort" data-i18n="vpn.socks">Локальный SOCKS5</label><input id="proxyLocalPort" class="input" type="number" value="10808" min="1" max="65535"></div>
+            <div class="field"><label for="proxyHttpPort" data-i18n="vpn.http">Локальный HTTP (для Harness)</label><input id="proxyHttpPort" class="input" type="number" value="10809" min="1" max="65535"></div>
+            <div class="field"><label for="proxyTransport" data-i18n="vpn.transport">Транспорт</label><select id="proxyTransport" class="input"><option value="tcp">TCP</option><option value="ws">WebSocket</option><option value="grpc">gRPC</option></select></div>
+            <div class="field"><label for="proxySecurity" data-i18n="vpn.security">Защита</label><select id="proxySecurity" class="input"><option value="tls">TLS</option><option value="reality">Reality</option><option value="none" data-i18n="vpn.sec.none">Без TLS</option></select></div>
           </div>
-          <div id="tlsFields" class="advanced field"><label for="proxyServerName">TLS Server Name</label><input id="proxyServerName" class="input" placeholder="По умолчанию адрес сервера"></div>
+          <div id="tlsFields" class="advanced field"><label for="proxyServerName" data-i18n="vpn.sni">TLS Server Name</label><input id="proxyServerName" class="input" data-i18n-ph="vpn.sni.ph" placeholder="По умолчанию адрес сервера"></div>
           <div id="wsFields" class="advanced grid hidden">
-            <div class="field"><label for="proxyWsPath">WebSocket path</label><input id="proxyWsPath" class="input" value="/"></div>
-            <div class="field"><label for="proxyWsHost">WebSocket Host</label><input id="proxyWsHost" class="input" placeholder="Необязательно"></div>
+            <div class="field"><label for="proxyWsPath" data-i18n="vpn.wspath">WebSocket path</label><input id="proxyWsPath" class="input" value="/"></div>
+            <div class="field"><label for="proxyWsHost" data-i18n="vpn.wshost">WebSocket Host</label><input id="proxyWsHost" class="input" data-i18n-ph="vpn.wshost.ph" placeholder="Необязательно"></div>
           </div>
         </details>
 
         <div class="actions">
-          <button id="testProxyBtn" class="btn" type="button">Подключить и проверить</button>
-          <button id="stopProxyBtn" class="btn" type="button" disabled>Отключить</button>
+          <button id="testProxyBtn" class="btn" type="button" data-i18n="vpn.connect">Подключить и проверить</button>
+          <button id="stopProxyBtn" class="btn" type="button" data-i18n="vpn.disconnect" disabled>Отключить</button>
         </div>
-        <div id="proxyStatus" class="status">V2Ray не подключён</div>
+        <div id="proxyStatus" class="status" data-i18n="vpn.idle">V2Ray не подключён</div>
         <div id="proxyInstallProgress" class="progress-track hidden" aria-hidden="true">
           <div id="proxyInstallProgressBar" class="progress-fill"></div>
         </div>
@@ -389,28 +417,30 @@ textarea.input { resize: vertical; font-family: inherit; line-height: 1.5; }
     <div id="gpuNotice" class="status hidden"></div>
     <div class="section">
       <div class="section-title">
-        <div><strong>Обновления</strong><p class="section-description" id="updateStatus">Пока не проверено</p></div>
+        <div><strong data-i18n="upd.title">Обновления</strong><p class="section-description" id="updateStatus" data-i18n="upd.idle">Пока не проверено</p><p class="section-description" id="rollbackStatus" hidden></p></div>
         <div class="section-controls">
-          <button id="checkUpdatesBtn" class="btn btn-inline" type="button">Проверить обновления</button>
+          <button id="checkUpdatesBtn" class="btn btn-inline" type="button" data-i18n="upd.check">Проверить обновления</button>
+          <button id="rollbackUpdateBtn" class="btn btn-inline" type="button" data-i18n="upd.rollback" disabled>Откатить обновление</button>
         </div>
       </div>
       <div id="updateDialog" class="advanced" hidden>
         <div class="field">
-          <label class="server-list-label">Что нового</label>
+          <label class="server-list-label" data-i18n="upd.list">Что нового</label>
           <div id="updateList" class="server-list"></div>
         </div>
+        <div id="updateSkippedNote" class="status" data-i18n="upd.skipped.note" hidden>Вы скрывали это обновление</div>
         <div class="actions">
-          <button id="applyUpdateBtn" class="btn" type="button">Обновиться</button>
-          <button id="laterUpdateBtn" class="btn" type="button">Не сейчас</button>
-          <button id="skipUpdateBtn" class="btn" type="button">Не предлагать это</button>
+          <button id="applyUpdateBtn" class="btn" type="button" data-i18n="upd.apply">Обновиться</button>
+          <button id="laterUpdateBtn" class="btn" type="button" data-i18n="upd.later">Не сейчас</button>
+          <button id="skipUpdateBtn" class="btn" type="button" data-i18n="upd.skip">Не предлагать это</button>
         </div>
         <div id="updateProgress" class="status"></div>
       </div>
     </div>
-    <button id="launchBtn" class="launch" disabled>Запустить Harness</button>
+    <button id="launchBtn" class="launch" data-i18n="launch.btn" disabled>Запустить Harness</button>
     <div id="errorBox" class="error-box hidden"><span id="errorText"></span></div>
     <p class="section-description" style="text-align:center;">Собрано с помощью Muse Spark</p>
-    <div id="launchOverlay" class="overlay hidden"><div class="spinner"></div><div id="overlayText">Запуск…</div></div>
+    <div id="launchOverlay" class="overlay hidden"><div class="spinner"></div><div id="overlayText" data-i18n="launch.st.fallback">Запуск…</div></div>
   </section>
 </main>
 <script>
@@ -421,6 +451,8 @@ const launchBtn = byId('launchBtn');
 const fullscreenToggle = byId('fullscreenToggle');
 const proxyEnabled = byId('proxyEnabled');
 const a11yToggle = byId('a11yToggle');
+const a11ySpeakPress = byId('a11ySpeakPress');
+const a11ySpeakHover = byId('a11ySpeakHover');
 const checkUpdatesBtn = byId('checkUpdatesBtn');
 const updateStatus = byId('updateStatus');
 const updateDialog = byId('updateDialog');
@@ -429,6 +461,12 @@ const updateProgress = byId('updateProgress');
 const applyUpdateBtn = byId('applyUpdateBtn');
 const laterUpdateBtn = byId('laterUpdateBtn');
 const skipUpdateBtn = byId('skipUpdateBtn');
+const langRu = byId('langRu');
+const langEn = byId('langEn');
+const langZh = byId('langZh');
+const updateSkippedNote = byId('updateSkippedNote');
+const rollbackUpdateBtn = byId('rollbackUpdateBtn');
+const rollbackStatus = byId('rollbackStatus');
 const proxyFields = byId('proxyFields');
 const proxyStatus = byId('proxyStatus');
 const proxyInstallProgress = byId('proxyInstallProgress');
@@ -447,7 +485,42 @@ const errorBox = byId('errorBox');
 const errorText = byId('errorText');
 let currentPort = null;
 let proxyRunning = false;
-// Last known answer to "is v2ray.exe on this machine" — the single input every
+// Окно под содержимое подгоняем один раз — дальше размер выбирает человек.
+let windowFitted = false;
+
+function fitWindowToContent() {
+  if (windowFitted) return;
+  windowFitted = true;
+  try {
+    if (!window.harnessAPI || typeof window.harnessAPI.fitWindow !== 'function') return;
+    const dialog = document.querySelector('.dialog');
+    if (!dialog) return;
+    window.harnessAPI.fitWindow(dialog.offsetHeight + 150);
+  } catch {}
+}
+// Последнее состояние порта для перерисовки при смене языка.
+let portState = { kind: 'scanning', port: null, reason: '' };
+
+function paintPortStatus() {
+  const port = portState.port;
+  if (portState.invalid) {
+    setStatus(portStatus, 'error', t('port.invalid'));
+    return;
+  }
+  if (portState.kind === 'ready' && port !== null) {
+    setStatus(portStatus, 'ready', t('port.ready', { port }));
+    return;
+  }
+  if (portState.kind === 'error' && port !== null) {
+    setStatus(portStatus, 'error', t(portState.reason === 'busy' ? 'port.busy' : 'port.unavailable', { port }));
+    return;
+  }
+  if (port !== null) {
+    setStatus(portStatus, 'scanning', t('port.checking', { port }));
+    return;
+  }
+  setStatus(portStatus, 'scanning', t('port.scanning'));
+}// Last known answer to "is v2ray.exe on this machine" — the single input every
 // engine-button decision is made from. `null` until the first status read, which
 // makes an unknown state render the install button rather than hide both.
 let v2rayCoreAvailable = null;
@@ -468,7 +541,7 @@ function setStatus(element, kind, text) {
     clearTimeout(proxyReadyTimer);
     proxyReadyTimer = setTimeout(() => {
       if (proxyStatus.textContent !== text) return;
-      setStatus(proxyStatus, '', proxyRunning ? 'Прокси подключён' : 'V2Ray не подключён');
+      setStatus(proxyStatus, '', proxyRunning ? t('vpn.connected') : t('vpn.idle'));
     }, PROXY_READY_LINGER_MS);
   } else if (element === proxyStatus) {
     clearTimeout(proxyReadyTimer);
@@ -501,26 +574,585 @@ function readableError(error) {
   return raw.replace(wrapper, '').trim() || raw;
 }
 
+// --- Язык окна: RU/EN/ZH -----------------------------------------------------
+// Все собственные строки окна живут в словаре ниже. Сообщения из глубины
+// (бэкенд, движок туннеля) приходят по-русски и не переводятся.
+const LAUNCHER_LANG_VOICE = { ru: 'ru-RU', en: 'en-US', zh: 'zh-CN' };
+const LAUNCHER_LANG_KEY = 'dsh.launcher.lang';
+let uiLang = 'ru';
+try {
+  const savedLang = localStorage.getItem(LAUNCHER_LANG_KEY);
+  if (savedLang === 'en' || savedLang === 'zh' || savedLang === 'ru') uiLang = savedLang;
+} catch {}
+try { document.documentElement.lang = uiLang; } catch {}
+const STRINGS = {
+  ru: {
+    'lang.title': 'Язык',
+    'lang.desc': 'Язык окна и голосовых подсказок',
+    'lang.changed': 'Язык: русский.',
+    'app.subtitle': 'Настройте локальный запуск приложения',
+    'title.min': 'Свернуть',
+    'title.max': 'Развернуть',
+    'title.restore': 'Восстановить',
+    'title.close': 'Закрыть',
+    'brand.alt': 'Логотип DeepSeek Harness',
+    'port.label': 'Порт локального сервера',
+    'port.auto': 'Автопоиск',
+    'port.fullscreen': 'Полный экран',
+    'port.fullscreen.desc': 'Открыть Harness во весь экран',
+    'proxy.on': 'Туннель включён.',
+    'proxy.off': 'Туннель выключен.',
+    'fs.on': 'Полный экран включён.',
+    'fs.off': 'Полный экран выключен.',
+    'port.scanning': 'Поиск свободного порта…',
+    'port.ready': 'Порт {port} свободен',
+    'port.ready.speak': 'Порт {port} свободен. Можно запускать.',
+    'port.invalid': 'Введите порт от 1 до 65535',
+    'port.checking': 'Проверка порта {port}…',
+    'port.busy': 'Порт {port} занят',
+    'port.unavailable': 'Порт {port} недоступен',
+    'a11y.title': 'Доступная версия',
+    'a11y.desc': 'Чёрно-жёлтая тема и голосовые подсказки — та же настройка, что в меню «Специальные возможности»',
+    'a11y.on': 'Доступная версия включена. Чёрно-жёлтая тема и озвучка.',
+    'a11y.off': 'Доступная версия выключена.',
+    'a11y.sub.press': 'Озвучивать при нажатии: блоки — целиком, поля — полностью',
+    'a11y.sub.hover': 'Озвучивать при наведении: что делает кнопка или переключатель',
+    'a11y.press.on': 'Озвучка нажатий включена.',
+    'a11y.press.off': 'Озвучка нажатий выключена.',
+    'a11y.hover.on': 'Озвучка наведения включена.',
+    'a11y.hover.off': 'Озвучка наведения выключена.',
+    'upd.title': 'Обновления',
+    'upd.idle': 'Пока не проверено',
+    'upd.check': 'Проверить обновления',
+    'upd.rollback': 'Откатить обновление',
+    'upd.list': 'Что нового',
+    'upd.empty': 'Есть новые коммиты, но список пуст',
+    'upd.skipped.note': 'Вы скрывали это обновление',
+    'upd.apply': 'Обновиться',
+    'upd.later': 'Не сейчас',
+    'upd.skip': 'Не предлагать это',
+    'upd.shell.old': 'Оболочка слишком старая для проверки обновлений.',
+    'upd.shell.old.rb': 'Оболочка слишком старая для отката.',
+    'upd.asking': 'Спрашиваю GitHub…',
+    'upd.slow': 'Всё ещё качаю — сеть медленная…',
+    'upd.uptodate': 'У вас последняя версия ({short}).',
+    'upd.uptodate.speak': 'У вас последняя версия.',
+    'upd.hidden': 'Есть обновление, но вы его скрыли.',
+    'upd.check.fail': 'Не удалось проверить обновления.',
+    'upd.found': 'Найдено обновлений: {n}.',
+    'upd.found.speak': 'Найдено обновление. Изменений: {n}.',
+    'upd.applying': 'Подтягиваю обновление…',
+    'upd.done': 'Обновлено. Перезапустите окно через батник — он сам дособирает новое.',
+    'upd.done.speak': 'Обновление установлено. Перезапустите окно через батник.',
+    'upd.apply.fail': 'Не удалось обновиться.',
+    'upd.skipped.done': 'Скрыто. Напомню, когда выйдет следующее обновление.',
+    'upd.nocommit': 'без описания',
+    'upd.rb.target': 'Можно откатить на {short}.',
+    'upd.rollbacking': 'Откатываю…',
+    'upd.rb.done': 'Откачено на {short}. Перезапустите окно через батник — он сам дособирает.',
+    'upd.rb.done.speak': 'Откат выполнен. Перезапустите окно через батник.',
+    'upd.rb.fail': 'Не удалось откатить.',
+    'launch.btn': 'Запустить Harness',
+    'launch.st.spawning': 'Запуск сервера…',
+    'launch.st.waiting': 'Ожидание готовности…',
+    'launch.st.loading': 'Загрузка интерфейса…',
+    'launch.st.fallback': 'Запуск…',
+    'launch.vpn': 'Подключение V2Ray…',
+    'launch.fail.speak': 'Не удалось запустить. {text}',
+    'gpu.crash': 'GPU недоступен: приложение перезапустилось в режиме программного рендеринга. Анимации могут быть менее плавными.',
+    'gpu.soft': 'Включён программный рендеринг (DSH_SOFTWARE_RENDERING). Анимации могут быть менее плавными.',
+    'unit.mb': 'МБ',
+    'error.prefix': 'Ошибка:',
+  },
+};
+
+STRINGS.en = {
+  'lang.title': 'Language',
+  'lang.desc': 'Window and voice prompt language',
+  'lang.changed': 'Language: English.',
+  'app.subtitle': 'Set up the local app launch',
+  'title.min': 'Minimize',
+  'title.max': 'Maximize',
+  'title.restore': 'Restore',
+  'title.close': 'Close',
+  'brand.alt': 'DeepSeek Harness logo',
+  'port.label': 'Local server port',
+  'port.auto': 'Auto-find',
+    'port.fullscreen': 'Fullscreen',
+    'port.fullscreen.desc': 'Open Harness fullscreen',
+    'proxy.on': 'Tunnel on.',
+    'proxy.off': 'Tunnel off.',
+    'fs.on': 'Fullscreen on.',
+    'fs.off': 'Fullscreen off.',
+  'port.scanning': 'Looking for a free port…',
+  'port.ready': 'Port {port} is free',
+  'port.ready.speak': 'Port {port} is free. Ready to launch.',
+  'port.invalid': 'Enter a port from 1 to 65535',
+  'port.checking': 'Checking port {port}…',
+  'port.busy': 'Port {port} is busy',
+  'port.unavailable': 'Port {port} is unavailable',
+  'a11y.title': 'Accessible version',
+  'a11y.desc': 'Black-yellow theme and voice prompts — the same setting as the Accessibility menu',
+  'a11y.on': 'Accessible version on. Black-yellow theme and voice.',
+    'a11y.off': 'Accessible version off.',
+    'a11y.sub.press': 'Speak on press: blocks in full, fields completely',
+    'a11y.sub.hover': 'Speak on hover: what a button or switch does',
+    'a11y.press.on': 'Press announcements on.',
+    'a11y.press.off': 'Press announcements off.',
+    'a11y.hover.on': 'Hover announcements on.',
+    'a11y.hover.off': 'Hover announcements off.',
+  'upd.title': 'Updates',
+  'upd.idle': 'Not checked yet',
+  'upd.check': 'Check for updates',
+  'upd.rollback': 'Roll back update',
+  'upd.list': "What's new",
+  'upd.empty': 'There are new commits, but the list is empty',
+  'upd.skipped.note': 'You hid this update',
+  'upd.apply': 'Update',
+  'upd.later': 'Later',
+  'upd.skip': "Don't offer this",
+  'upd.shell.old': 'Shell is too old to check for updates.',
+  'upd.shell.old.rb': 'Shell is too old to roll back.',
+  'upd.asking': 'Asking GitHub…',
+  'upd.slow': 'Still downloading — slow network…',
+  'upd.uptodate': 'You have the latest version ({short}).',
+  'upd.uptodate.speak': 'You have the latest version.',
+  'upd.hidden': 'There is an update, but you hid it.',
+  'upd.check.fail': 'Could not check for updates.',
+  'upd.found': 'Updates found: {n}.',
+  'upd.found.speak': 'Update found. Changes: {n}.',
+  'upd.applying': 'Pulling the update…',
+  'upd.done': 'Updated. Relaunch via the batch file — it will rebuild.',
+  'upd.done.speak': 'Update installed. Relaunch via the batch file.',
+  'upd.apply.fail': 'Could not update.',
+  'upd.skipped.done': "Hidden. I'll remind you on the next update.",
+  'upd.nocommit': 'no description',
+  'upd.rb.target': 'Can roll back to {short}.',
+  'upd.rollbacking': 'Rolling back…',
+  'upd.rb.done': 'Rolled back to {short}. Relaunch via the batch file — it will rebuild.',
+  'upd.rb.done.speak': 'Rollback done. Relaunch via the batch file.',
+  'upd.rb.fail': 'Could not roll back.',
+  'launch.btn': 'Launch Harness',
+  'launch.st.spawning': 'Starting server…',
+  'launch.st.waiting': 'Waiting for readiness…',
+  'launch.st.loading': 'Loading interface…',
+  'launch.st.fallback': 'Starting…',
+  'launch.vpn': 'Connecting V2Ray…',
+  'launch.fail.speak': 'Failed to launch. {text}',
+  'gpu.crash': 'GPU unavailable: the app restarted in software rendering mode. Animations may be less smooth.',
+  'gpu.soft': 'Software rendering is on (DSH_SOFTWARE_RENDERING). Animations may be less smooth.',
+  'unit.mb': 'MB',
+  'error.prefix': 'Error:',
+};
+
+STRINGS.zh = {
+  'lang.title': '语言',
+  'lang.desc': '窗口和语音提示的语言',
+  'lang.changed': '语言：中文。',
+  'app.subtitle': '设置本地应用启动',
+  'title.min': '最小化',
+  'title.max': '最大化',
+  'title.restore': '还原',
+  'title.close': '关闭',
+  'brand.alt': 'DeepSeek Harness 徽标',
+  'port.label': '本地服务器端口',
+  'port.auto': '自动查找',
+    'port.fullscreen': '全屏',
+    'port.fullscreen.desc': '全屏打开 Harness',
+    'proxy.on': '隧道已开启。',
+    'proxy.off': '隧道已关闭。',
+    'fs.on': '全屏已开启。',
+    'fs.off': '全屏已关闭。',
+  'port.scanning': '正在查找空闲端口…',
+  'port.ready': '端口 {port} 空闲',
+  'port.ready.speak': '端口 {port} 空闲，可以启动。',
+  'port.invalid': '请输入 1 到 65535 的端口',
+  'port.checking': '正在检查端口 {port}…',
+  'port.busy': '端口 {port} 被占用',
+  'port.unavailable': '端口 {port} 不可用',
+  'a11y.title': '无障碍版本',
+  'a11y.desc': '黑底黄字主题和语音提示——与“特殊功能”菜单中的设置相同',
+  'a11y.on': '无障碍版本已开启，黑底黄字主题和语音提示。',
+    'a11y.off': '无障碍版本已关闭。',
+    'a11y.sub.press': '按下时朗读：整个区块、完整的字段内容',
+    'a11y.sub.hover': '悬停时朗读：按钮或开关的作用',
+    'a11y.press.on': '已开启按下朗读。',
+    'a11y.press.off': '已关闭按下朗读。',
+    'a11y.hover.on': '已开启悬停朗读。',
+    'a11y.hover.off': '已关闭悬停朗读。',
+  'upd.title': '更新',
+  'upd.idle': '尚未检查',
+  'upd.check': '检查更新',
+  'upd.rollback': '回滚更新',
+  'upd.list': '更新内容',
+  'upd.empty': '有新的提交，但列表为空',
+  'upd.skipped.note': '你已隐藏此更新',
+  'upd.apply': '更新',
+  'upd.later': '稍后',
+  'upd.skip': '不再提示',
+  'upd.shell.old': '当前外壳过旧，无法检查更新。',
+  'upd.shell.old.rb': '当前外壳过旧，无法回滚。',
+  'upd.asking': '正在询问 GitHub…',
+  'upd.slow': '仍在下载——网络较慢…',
+  'upd.uptodate': '已是最新版本（{short}）。',
+  'upd.uptodate.speak': '已是最新版本。',
+  'upd.hidden': '有更新，但你已将其隐藏。',
+  'upd.check.fail': '检查更新失败。',
+  'upd.found': '发现 {n} 项更新。',
+  'upd.found.speak': '发现更新，共 {n} 项改动。',
+  'upd.applying': '正在拉取更新…',
+  'upd.done': '更新完成，请通过 bat 文件重新启动窗口，它会自动重新构建。',
+  'upd.done.speak': '更新完成，请通过 bat 文件重新启动。',
+  'upd.apply.fail': '更新失败。',
+  'upd.skipped.done': '已隐藏，有新更新时再提醒你。',
+  'upd.nocommit': '无描述',
+  'upd.rb.target': '可回滚到 {short}。',
+  'upd.rollbacking': '正在回滚…',
+  'upd.rb.done': '已回滚到 {short}，请通过 bat 文件重新启动窗口，它会自动重新构建。',
+  'upd.rb.done.speak': '回滚完成，请通过 bat 文件重新启动。',
+  'upd.rb.fail': '回滚失败。',
+  'launch.btn': '启动 Harness',
+  'launch.st.spawning': '正在启动服务器…',
+  'launch.st.waiting': '正在等待就绪…',
+  'launch.st.loading': '正在加载界面…',
+  'launch.st.fallback': '正在启动…',
+  'launch.vpn': '正在连接 V2Ray…',
+  'launch.fail.speak': '启动失败，{text}',
+  'gpu.crash': 'GPU 不可用：应用已以软件渲染模式重启，动画可能不够流畅。',
+  'gpu.soft': '已启用软件渲染（DSH_SOFTWARE_RENDERING），动画可能不够流畅。',
+  'unit.mb': 'MB',
+  'error.prefix': '错误：',
+};
+
+function t(key, params) {
+  const table = STRINGS[uiLang] || STRINGS.ru;
+  const template = (table && table[key] !== undefined ? table[key] : (STRINGS.ru[key] !== undefined ? STRINGS.ru[key] : key));
+  return String(template).replace(/\{(\w+)\}/g, (match, name) => (
+    params && params[name] !== undefined && params[name] !== null ? String(params[name]) : match
+  ));
+}
+
+function applyStaticLanguage() {
+  try {
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      const key = el.getAttribute('data-i18n');
+      if (key) el.textContent = t(key);
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-ph');
+      if (key) el.setAttribute('placeholder', t(key));
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-title');
+      if (key) el.setAttribute('title', t(key));
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-aria');
+      if (key) el.setAttribute('aria-label', t(key));
+    });
+    document.querySelectorAll('[data-i18n-alt]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-alt');
+      if (key) el.setAttribute('alt', t(key));
+    });
+  } catch {}
+}
+
+function paintLangSwitcher() {
+  try {
+    byId('langRu').disabled = uiLang === 'ru';
+    byId('langEn').disabled = uiLang === 'en';
+    byId('langZh').disabled = uiLang === 'zh';
+  } catch {}
+}
+
+function setLanguage(lang, opts) {
+  if (lang !== 'ru' && lang !== 'en' && lang !== 'zh') return;
+  uiLang = lang;
+  try { localStorage.setItem(LAUNCHER_LANG_KEY, lang); } catch {}
+  try { document.documentElement.lang = lang; } catch {}
+  applyStaticLanguage();
+  paintLangSwitcher();
+  paintPortStatus();
+  showGpuNotice();
+  refreshProxySection();
+  try {
+    if (proxyStatus.className === 'status') {
+      setStatus(proxyStatus, '', proxyRunning ? t('vpn.connected') : t('vpn.idle'));
+    }
+  } catch {}
+  if (!opts || opts.announce !== false) speakA11y(t('lang.changed'));
+}
+
+function refreshProxySection() {
+  void refreshProxySettings();
+  void refreshCoreAvailability();
+}
+
+// VPN-строки тем же словарём: интерфейс туннеля тоже переключается.
+Object.assign(STRINGS.ru, {
+  'vpn.title': 'Подключить V2Ray',
+  'vpn.desc': 'Пустить запросы Harness через ваш сервер — вставьте ссылку или список серверов',
+  'vpn.install': 'Установить V2Ray (движок)',
+  'vpn.installed': 'Движок V2Ray установлен',
+  'vpn.install.t.missing': 'Скачать и подготовить v2ray.exe для этого приложения',
+  'vpn.install.t.present': 'Движок туннеля уже найден — установка не нужна',
+  'vpn.remove': 'Удалить V2Ray',
+  'vpn.remove.t': 'Убрать v2ray.exe и файлы данных с компьютера',
+  'vpn.explainer': 'Установка скачивает движок туннеля (v2ray.exe), удаление — убирает его с компьютера. Список серверов при удалении не трогается.',
+  'vpn.link': 'Ссылка на сервер',
+  'vpn.link.ph': 'vless://… — можно вставить сразу несколько ссылок, каждая с новой строки',
+  'vpn.add': 'Добавить в список',
+  'vpn.sub': 'Ссылка на список серверов (подписка)',
+  'vpn.sub.ph': 'https://…',
+  'vpn.load': 'Загрузить список',
+  'vpn.servers': 'Серверы',
+  'vpn.empty': 'Список пуст — вставьте ссылку или загрузите подписку',
+  'vpn.advanced': 'Дополнительные параметры',
+  'vpn.host': 'Сервер',
+  'vpn.host.ph': 'proxy.example.com',
+  'vpn.rport': 'Порт сервера',
+  'vpn.uuid': 'UUID VLESS',
+  'vpn.uuid.ph': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+  'vpn.socks': 'Локальный SOCKS5',
+  'vpn.http': 'Локальный HTTP (для Harness)',
+  'vpn.transport': 'Транспорт',
+  'vpn.tr.tcp': 'TCP',
+  'vpn.tr.ws': 'WebSocket',
+  'vpn.tr.grpc': 'gRPC',
+  'vpn.security': 'Защита',
+  'vpn.sec.tls': 'TLS',
+  'vpn.sec.reality': 'Reality',
+  'vpn.sec.none': 'Без TLS',
+  'vpn.sni': 'TLS Server Name',
+  'vpn.sni.ph': 'По умолчанию адрес сервера',
+  'vpn.wspath': 'WebSocket path',
+  'vpn.wshost': 'WebSocket Host',
+  'vpn.wshost.ph': 'Необязательно',
+  'vpn.connect': 'Подключить и проверить',
+  'vpn.disconnect': 'Отключить',
+  'vpn.idle': 'V2Ray не подключён',
+  'vpn.connected': 'Прокси подключён',
+  'vpn.noengine': 'Движок V2Ray не установлен. Нажмите «Установить V2Ray (движок)» — приложение скачает его само.',
+  'vpn.noengine.plan': 'Движок V2Ray не установлен — нажмите «Установить V2Ray (движок)». Или выключите туннель переключателем, чтобы запустить приложение без него.',
+  'vpn.starting': 'Запуск V2Ray…',
+  'vpn.opened': 'Прокси открыт на 127.0.0.1:{port}. Проверка туннеля…',
+  'vpn.working': 'Прокси работает: {target}, {ms} мс',
+    'vpn.tunnel.ok': 'Туннель подключён и проверен.',
+    'vpn.tunnel.speak': 'Туннель: {text}',
+  'vpn.tunnel.fail': 'прокси не запустился. {msg}',
+  'vpn.off': 'V2Ray отключён',
+  'vpn.server.removed': 'Сервер удалён',
+  'vpn.server.remove.t': 'Удалить сервер',
+  'vpn.paste.empty': 'Вставьте ссылку на сервер',
+  'vpn.added': 'Добавлено серверов: {n}',
+  'vpn.sub.empty': 'Вставьте ссылку на список серверов',
+  'vpn.sub.loading': 'Загружаю список серверов…',
+  'vpn.sub.loaded': 'Загружено серверов: {n}',
+  'vpn.setup': 'Ставлю V2Ray… 0%',
+  'vpn.setup.def': 'Установка V2Ray…',
+    'vpn.installed.full': 'V2Ray установлен. Можно подключать туннель. (100%){bytes}',
+    'vpn.installed.speak': 'Движок туннеля установлен. Можно подключать.',
+  'vpn.install.fail.def': 'Не удалось установить V2Ray. Проверьте подключение к сети и повторите.',
+  'vpn.install.fail.speak': 'Не удалось установить движок туннеля.',
+  'vpn.install.fail.speak.r': 'Не удалось установить движок туннеля. {reason}',
+  'vpn.removing': 'Удаляю V2Ray…',
+  'vpn.removed.full': 'V2Ray удалён. Движок больше не занимает место; установить его заново можно этой же кнопкой.',
+  'vpn.removed.speak': 'Движок туннеля удалён.',
+  'vpn.remove.fail.def': 'Не удалось удалить V2Ray. Закройте приложение и повторите.',
+  'vpn.remove.fail.speak': 'Не удалось удалить движок туннеля.',
+  'vpn.remove.fail.speak.r': 'Не удалось удалить движок туннеля. {reason}',
+  'vpn.changed': 'Сервер изменён — нажмите «Подключить и проверить»',
+  'vpn.plan': 'прокси включён, но движок удалён — установите его или выключите туннель',
+  'vpn.launch.hint': 'Чтобы запустить приложение без туннеля, выключите его переключателем выше.',
+});
+
+Object.assign(STRINGS.en, {
+  'vpn.title': 'Connect V2Ray',
+  'vpn.desc': 'Route Harness requests through your server — paste a link or a server list',
+  'vpn.install': 'Install V2Ray (engine)',
+  'vpn.installed': 'V2Ray engine installed',
+  'vpn.install.t.missing': 'Download and prepare v2ray.exe for this app',
+  'vpn.install.t.present': 'Tunnel engine already found — no install needed',
+  'vpn.remove': 'Remove V2Ray',
+  'vpn.remove.t': 'Remove v2ray.exe and data files from this computer',
+  'vpn.explainer': 'Install downloads the tunnel engine (v2ray.exe), remove deletes it from this computer. The server list is kept.',
+  'vpn.link': 'Server link',
+  'vpn.link.ph': 'vless://… — you can paste several links, one per line',
+  'vpn.add': 'Add to list',
+  'vpn.sub': 'Server list link (subscription)',
+  'vpn.sub.ph': 'https://…',
+  'vpn.load': 'Load list',
+  'vpn.servers': 'Servers',
+  'vpn.empty': 'List is empty — paste a link or load a subscription',
+  'vpn.advanced': 'Advanced settings',
+  'vpn.host': 'Server',
+  'vpn.host.ph': 'proxy.example.com',
+  'vpn.rport': 'Server port',
+  'vpn.uuid': 'UUID VLESS',
+  'vpn.uuid.ph': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+  'vpn.socks': 'Local SOCKS5',
+  'vpn.http': 'Local HTTP (for Harness)',
+  'vpn.transport': 'Transport',
+  'vpn.tr.tcp': 'TCP',
+  'vpn.tr.ws': 'WebSocket',
+  'vpn.tr.grpc': 'gRPC',
+  'vpn.security': 'Security',
+  'vpn.sec.tls': 'TLS',
+  'vpn.sec.reality': 'Reality',
+  'vpn.sec.none': 'No TLS',
+  'vpn.sni': 'TLS Server Name',
+  'vpn.sni.ph': 'Server address by default',
+  'vpn.wspath': 'WebSocket path',
+  'vpn.wshost': 'WebSocket Host',
+  'vpn.wshost.ph': 'Optional',
+  'vpn.connect': 'Connect and test',
+  'vpn.disconnect': 'Disconnect',
+  'vpn.idle': 'V2Ray is not connected',
+  'vpn.connected': 'Proxy connected',
+  'vpn.noengine': 'V2Ray engine is not installed. Press “Install V2Ray (engine)” — the app will download it.',
+  'vpn.noengine.plan': 'V2Ray engine is not installed — press “Install V2Ray (engine)”. Or turn the tunnel off to launch without it.',
+  'vpn.starting': 'Starting V2Ray…',
+  'vpn.opened': 'Proxy open at 127.0.0.1:{port}. Testing tunnel…',
+  'vpn.working': 'Proxy works: {target}, {ms} ms',
+    'vpn.tunnel.ok': 'Tunnel connected and tested.',
+    'vpn.tunnel.speak': 'Tunnel: {text}',
+  'vpn.tunnel.fail': 'proxy failed to start. {msg}',
+  'vpn.off': 'V2Ray disconnected',
+  'vpn.server.removed': 'Server removed',
+  'vpn.server.remove.t': 'Remove server',
+  'vpn.paste.empty': 'Paste a server link',
+  'vpn.added': 'Servers added: {n}',
+  'vpn.sub.empty': 'Paste a server list link',
+  'vpn.sub.loading': 'Loading server list…',
+  'vpn.sub.loaded': 'Servers loaded: {n}',
+  'vpn.setup': 'Installing V2Ray… 0%',
+  'vpn.setup.def': 'Installing V2Ray…',
+    'vpn.installed.full': 'V2Ray installed. You can connect the tunnel. (100%){bytes}',
+    'vpn.installed.speak': 'Tunnel engine installed. You can connect.',
+  'vpn.install.fail.def': 'Could not install V2Ray. Check your connection and retry.',
+  'vpn.install.fail.speak': 'Could not install the tunnel engine.',
+  'vpn.install.fail.speak.r': 'Could not install the tunnel engine. {reason}',
+  'vpn.removing': 'Removing V2Ray…',
+  'vpn.removed.full': 'V2Ray removed. It no longer takes space; reinstall anytime with the same button.',
+  'vpn.removed.speak': 'Tunnel engine removed.',
+  'vpn.remove.fail.def': 'Could not remove V2Ray. Close the app and retry.',
+  'vpn.remove.fail.speak': 'Could not remove the tunnel engine.',
+  'vpn.remove.fail.speak.r': 'Could not remove the tunnel engine. {reason}',
+  'vpn.changed': 'Server changed — press “Connect and test”',
+  'vpn.plan': 'proxy is on but the engine is removed — install it or turn the tunnel off',
+  'vpn.launch.hint': 'To launch without the tunnel, turn it off with the switch above.',
+});
+
+Object.assign(STRINGS.zh, {
+  'vpn.title': '连接 V2Ray',
+  'vpn.desc': '将 Harness 请求经由你的服务器转发——粘贴链接或服务器列表',
+  'vpn.install': '安装 V2Ray（内核）',
+  'vpn.installed': 'V2Ray 内核已安装',
+  'vpn.install.t.missing': '为此应用下载并准备 v2ray.exe',
+  'vpn.install.t.present': '隧道内核已找到——无需安装',
+  'vpn.remove': '删除 V2Ray',
+  'vpn.remove.t': '从本机删除 v2ray.exe 和数据文件',
+  'vpn.explainer': '安装会下载隧道内核（v2ray.exe），删除会将其从电脑移除，服务器列表不受影响。',
+  'vpn.link': '服务器链接',
+  'vpn.link.ph': 'vless://…——可一次粘贴多条链接，每行一条',
+  'vpn.add': '添加到列表',
+  'vpn.sub': '服务器列表链接（订阅）',
+  'vpn.sub.ph': 'https://…',
+  'vpn.load': '加载列表',
+  'vpn.servers': '服务器',
+  'vpn.empty': '列表为空——请粘贴链接或加载订阅',
+  'vpn.advanced': '高级参数',
+  'vpn.host': '服务器',
+  'vpn.host.ph': 'proxy.example.com',
+  'vpn.rport': '服务器端口',
+  'vpn.uuid': 'UUID VLESS',
+  'vpn.uuid.ph': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+  'vpn.socks': '本地 SOCKS5',
+  'vpn.http': '本地 HTTP（用于 Harness）',
+  'vpn.transport': '传输方式',
+  'vpn.tr.tcp': 'TCP',
+  'vpn.tr.ws': 'WebSocket',
+  'vpn.tr.grpc': 'gRPC',
+  'vpn.security': '加密',
+  'vpn.sec.tls': 'TLS',
+  'vpn.sec.reality': 'Reality',
+  'vpn.sec.none': '无 TLS',
+  'vpn.sni': 'TLS Server Name',
+  'vpn.sni.ph': '默认为服务器地址',
+  'vpn.wspath': 'WebSocket path',
+  'vpn.wshost': 'WebSocket Host',
+  'vpn.wshost.ph': '选填',
+  'vpn.connect': '连接并测试',
+  'vpn.disconnect': '断开',
+  'vpn.idle': 'V2Ray 未连接',
+  'vpn.connected': '代理已连接',
+  'vpn.noengine': 'V2Ray 内核未安装，点击“安装 V2Ray（内核）”，应用会自动下载。',
+  'vpn.noengine.plan': 'V2Ray 内核未安装——点击“安装 V2Ray（内核）”，或关闭隧道后直接启动。',
+  'vpn.starting': '正在启动 V2Ray…',
+  'vpn.opened': '代理已在 127.0.0.1:{port} 开启，正在测试隧道…',
+  'vpn.working': '代理正常：{target}，{ms} 毫秒',
+    'vpn.tunnel.ok': '隧道已连接并通过测试。',
+    'vpn.tunnel.speak': '隧道：{text}',
+  'vpn.tunnel.fail': '代理启动失败，{msg}',
+  'vpn.off': 'V2Ray 已断开',
+  'vpn.server.removed': '服务器已删除',
+  'vpn.server.remove.t': '删除服务器',
+  'vpn.paste.empty': '请粘贴服务器链接',
+  'vpn.added': '已添加服务器：{n} 个',
+  'vpn.sub.empty': '请粘贴服务器列表链接',
+  'vpn.sub.loading': '正在加载服务器列表…',
+  'vpn.sub.loaded': '已加载服务器：{n} 个',
+  'vpn.setup': '正在安装 V2Ray…0%',
+  'vpn.setup.def': '正在安装 V2Ray…',
+    'vpn.installed.full': 'V2Ray 安装完成，可以连接隧道了。(100%){bytes}',
+    'vpn.installed.speak': '隧道内核安装完成，可以连接了。',
+  'vpn.install.fail.def': 'V2Ray 安装失败，请检查网络后重试。',
+  'vpn.install.fail.speak': '隧道内核安装失败。',
+  'vpn.install.fail.speak.r': '隧道内核安装失败，{reason}',
+  'vpn.removing': '正在删除 V2Ray…',
+  'vpn.removed.full': 'V2Ray 已删除，不再占用空间，可随时用同一按钮重新安装。',
+  'vpn.removed.speak': '隧道内核已删除。',
+  'vpn.remove.fail.def': 'V2Ray 删除失败，请关闭应用后重试。',
+  'vpn.remove.fail.speak': '隧道内核删除失败。',
+  'vpn.remove.fail.speak.r': '隧道内核删除失败，{reason}',
+  'vpn.changed': '服务器已更改——请点击“连接并测试”',
+  'vpn.plan': '代理已开启，但内核已删除——请安装内核或关闭隧道',
+  'vpn.launch.hint': '如需不经隧道启动，请用上方开关关闭隧道。',
+});
+
 // --- Доступная версия: чёрно-жёлтая тема + русская озвучка ------------------
 // Галочка — ярлык на те же два поля меню «Специальные возможности»
 // (контраст 'yellow' + voiceNav). Отдельной настройки нет: выбор хранится
 // в оболочке, а в основное окно переезжает через applyLauncherA11y в preload.
 let a11yEnabled = false;
+let speakPress = false;
+let speakHover = false;
 let lastSpokenText = '';
 let lastSpokenAt = 0;
+let lastHoverKey = null;
+let hoverClearTimer = 0;
 
-function speakA11y(text, force) {
+// Ключ ховера забываем не сразу, а с паузой: ёрзанье мыши по границе
+// элемента (ушёл на пустое и тут же вернулся) иначе звучит повтором.
+function scheduleHoverReset() {
+  clearTimeout(hoverClearTimer);
+  hoverClearTimer = setTimeout(() => { lastHoverKey = null; }, 1500);
+}
+
+function speakA11y(text, force, full) {
   // force — для самой фразы переключения: сторож уже выключен, а сказать надо.
+  // full — для нажатий: текст идёт целиком, без обрезки.
   if (!a11yEnabled && !force) return;
   try {
-    const message = String(text || '').trim().slice(0, 250);
+    let message = String(text || '').trim();
+    if (!full) message = message.slice(0, 250);
     if (message === '' || typeof speechSynthesis === 'undefined') return;
     // Повтор той же фразы подряд не озвучиваем — статусы обновляются часто.
     const now = Date.now();
     if (message === lastSpokenText && now - lastSpokenAt < 5000) return;
     lastSpokenText = message; lastSpokenAt = now;
     const utter = new SpeechSynthesisUtterance(message);
-    utter.lang = 'ru-RU'; utter.rate = 1; utter.pitch = 1; utter.volume = 1;
+    utter.lang = LAUNCHER_LANG_VOICE[uiLang] || 'ru-RU'; utter.rate = 1; utter.pitch = 1; utter.volume = 1;
     try { speechSynthesis.cancel(); } catch {}
     speechSynthesis.speak(utter);
   } catch { /* голос — украшение, молчим при любой ошибке */ }
@@ -532,10 +1164,18 @@ function applyLauncherA11y(enabled, opts) {
     document.documentElement.setAttribute('data-launcher-a11y', a11yEnabled ? 'yellow' : 'none');
   } catch {}
   if (a11yToggle && a11yToggle.checked !== a11yEnabled) a11yToggle.checked = a11yEnabled;
+  syncA11ySubs();
   if (!opts || opts.announce !== false) {
-    speakA11y(a11yEnabled
-      ? 'Доступная версия включена. Чёрно-жёлтая тема и озвучка.'
-      : 'Доступная версия выключена.', true);
+    let msg = a11yEnabled ? t('a11y.on') : t('a11y.off');
+    // Видимую плашку про GPU договариваем той же фразой: два голоса подряд
+    // всё равно глушат друг друга, а молчать про рендеринг нельзя.
+    try {
+      const notice = document.getElementById('gpuNotice');
+      if (a11yEnabled && notice && !notice.classList.contains('hidden') && notice.textContent.trim() !== '') {
+        msg += ' ' + notice.textContent.trim();
+      }
+    } catch {}
+    speakA11y(msg, true);
   }
 }
 
@@ -543,21 +1183,90 @@ async function loadLauncherA11y() {
   try {
     if (!window.harnessAPI || typeof window.harnessAPI.a11ySettings !== 'function') return;
     const doc = await window.harnessAPI.a11ySettings();
+    speakPress = doc.speakPress === true;
+    speakHover = doc.speakHover === true;
     applyLauncherA11y(doc && doc.enabled === true, { announce: false });
-  } catch { applyLauncherA11y(false, { announce: false }); }
+    // Плашка про GPU видна с самого входа: вход молчит, но о рендеринге сказать надо.
+    try {
+      const notice = document.getElementById('gpuNotice');
+      if (a11yEnabled && notice && !notice.classList.contains('hidden') && notice.textContent.trim() !== '') {
+        speakA11y(notice.textContent.trim());
+      }
+    } catch {}
+  } catch {
+    speakPress = false;
+    speakHover = false;
+    applyLauncherA11y(false, { announce: false });
+  }
 }
 
-async function saveLauncherA11y(enabled) {
+function currentA11yDoc() {
+  return {
+    enabled: Boolean(a11yToggle && a11yToggle.checked),
+    speakPress: speakPress === true,
+    speakHover: speakHover === true,
+  };
+}
+
+async function saveLauncherA11y() {
   try {
     if (!window.harnessAPI || typeof window.harnessAPI.a11ySave !== 'function') return;
-    await window.harnessAPI.a11ySave({ enabled: enabled === true });
+    await window.harnessAPI.a11ySave(currentA11yDoc());
   } catch { /* выбор уже применён на экране */ }
+}
+
+// Суб-галочки живут только при включённом мастере.
+function syncA11ySubs() {
+  try {
+    const on = Boolean(a11yToggle && a11yToggle.checked);
+    for (const [input, flag] of [[a11ySpeakPress, speakPress], [a11ySpeakHover, speakHover]]) {
+      if (!input) continue;
+      input.disabled = !on;
+      if (input.checked !== flag) input.checked = flag;
+      const row = input.closest('label');
+      if (row) row.classList.toggle('dimmed', !on);
+    }
+  } catch {}
+}
+
+// Что делает кнопка или переключатель под курсором: видимый текст, а у
+// значков без текста (крестики, сворачивание) — всплывающая подсказка.
+function hoverTextFor(el) {
+  try {
+    if (el.tagName === 'BUTTON') {
+      const raw = el.textContent.trim();
+      if (/^[\u2013\u25A1\u2715×\s]+$/.test(raw)) return (el.getAttribute('title') || raw).trim();
+      return raw.slice(0, 150);
+    }
+    const box = el.closest('.section-title');
+    const label = box ? box.querySelector('strong') : null;
+    const desc = box ? box.querySelector('.section-description') : null;
+    const parts = [];
+    if (label && label.textContent.trim() !== '') parts.push(label.textContent.trim());
+    if (desc && desc.textContent.trim() !== '') parts.push(desc.textContent.trim());
+    return parts.join('. ').slice(0, 200);
+  } catch { return ''; }
+}
+
+// Подпись поля и что в нём написано — целиком, без обрезки.
+function pressTextForField(el) {
+  try {
+    let label = '';
+    if (el.id) {
+      const lab = document.querySelector(`label[for="${el.id}"]`);
+      if (lab && lab.textContent.trim() !== '') label = lab.textContent.trim();
+    }
+    const value = el.value !== undefined && el.value !== null ? String(el.value).trim() : '';
+    return (label + (label !== '' && value !== '' ? '. ' : '') + value).trim();
+  } catch { return ''; }
 }
 
 // --- Обновления: проверка GitHub, вопрос, подтягивание ---------------------
 // «Новая версия» — любой новый коммит в master. Диалог показывает их список,
 // три исхода: обновиться, отложить, скрыть именно эту версию.
 let pendingUpdate = null;
+let autoUpdateChecked = false;
+let checkSlowTimer = 0;
 
 function setUpdateStatus(kind, text) {
   setStatus(updateStatus, kind, text);
@@ -570,46 +1279,63 @@ function setUpdateProgress(kind, text) {
 function hideUpdateDialog() {
   pendingUpdate = null;
   updateDialog.hidden = true;
+  updateSkippedNote.hidden = true;
 }
 
-async function checkUpdates() {
+async function checkUpdates(quiet) {
+  // Тихо (автопроверка при открытии): неудача вообще не видна, скрытое молчит.
+  // Вручную (кнопка): диалог показывается всегда, скрытое — с пометкой.
+  const silent = quiet === true;
   if (!window.harnessAPI || typeof window.harnessAPI.updateCheck !== 'function') {
-    setUpdateStatus('error', 'Оболочка слишком старая для проверки обновлений.');
+    if (!silent) setUpdateStatus('error', t('upd.shell.old'));
     return;
   }
-  setUpdateStatus('scanning', 'Спрашиваю GitHub…');
-  checkUpdatesBtn.disabled = true;
-  hideUpdateDialog();
+  if (!silent) {
+    setUpdateStatus('scanning', t('upd.asking'));
+    checkUpdatesBtn.disabled = true;
+    hideUpdateDialog();
+    // Долгая тишина — почти всегда медленная сеть: говорим это прямо,
+    // чтобы кольцо не выглядело зависшим.
+    checkSlowTimer = setTimeout(() => {
+      setUpdateStatus('scanning', t('upd.slow'));
+    }, 8000);
+  }
   try {
     const result = await window.harnessAPI.updateCheck();
+    refreshRollback(result);
     const short = String(result.local || '').slice(0, 7);
     if (result.upToDate) {
-      setUpdateStatus('ready', `У вас последняя версия (${short}).`);
-      speakA11y('У вас последняя версия.');
+      if (!silent) {
+        setUpdateStatus('ready', t('upd.uptodate', { short }));
+        speakA11y(t('upd.uptodate.speak'));
+      }
       return;
     }
-    if (result.skipped) {
-      setUpdateStatus('', 'Есть обновление, но вы его скрыли.');
-      speakA11y('Есть обновление, но вы его скрыли.');
+    if (result.skipped && silent) {
+      setUpdateStatus('', t('upd.hidden'));
       return;
     }
     showUpdateDialog(result);
   } catch (error) {
-    setUpdateStatus('error', readableError(error));
-    speakA11y('Не удалось проверить обновления.');
+    if (!silent) {
+      setUpdateStatus('error', readableError(error));
+      speakA11y(t('upd.check.fail'));
+    }
   } finally {
-    checkUpdatesBtn.disabled = false;
+    clearTimeout(checkSlowTimer);
+    if (!silent) checkUpdatesBtn.disabled = false;
   }
 }
 
 function showUpdateDialog(result) {
   pendingUpdate = result;
+  updateSkippedNote.hidden = !(result.skipped === true);
   updateList.textContent = '';
   const commits = Array.isArray(result.commits) ? result.commits : [];
   if (commits.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'server-empty';
-    empty.textContent = 'Есть новые коммиты, но список пуст';
+    empty.textContent = t('upd.empty');
     updateList.append(empty);
   }
   for (const commit of commits) {
@@ -619,7 +1345,7 @@ function showUpdateDialog(result) {
     text.className = 'server-text';
     const name = document.createElement('div');
     name.className = 'server-name';
-    name.textContent = String(commit.subject || 'без описания');
+    name.textContent = String(commit.subject || t('upd.nocommit'));
     const meta = document.createElement('div');
     meta.className = 'server-meta';
     meta.textContent = `${commit.short || ''} · ${commit.date || ''}`;
@@ -629,7 +1355,8 @@ function showUpdateDialog(result) {
   }
   setUpdateProgress('', '');
   updateDialog.hidden = false;
-  speakA11y(`Найдено обновление. Изменений: ${commits.length}.`);
+  setUpdateStatus('ready', t('upd.found', { n: commits.length }));
+  speakA11y(t('upd.found.speak', { n: commits.length }));
 }
 
 async function applyUpdate() {
@@ -637,15 +1364,15 @@ async function applyUpdate() {
   applyUpdateBtn.disabled = true;
   laterUpdateBtn.disabled = true;
   skipUpdateBtn.disabled = true;
-  setUpdateProgress('scanning', 'Подтягиваю обновление…');
+  setUpdateProgress('scanning', t('upd.applying'));
   try {
     await window.harnessAPI.updateApply();
     hideUpdateDialog();
-    setUpdateStatus('ready', 'Обновлено. Перезапустите окно через батник — он сам дособирает новое.');
-    speakA11y('Обновление установлено. Перезапустите окно через батник.');
+    setUpdateStatus('ready', t('upd.done'));
+    speakA11y(t('upd.done.speak'));
   } catch (error) {
     setUpdateProgress('error', readableError(error));
-    speakA11y('Не удалось обновиться.');
+    speakA11y(t('upd.apply.fail'));
   } finally {
     applyUpdateBtn.disabled = false;
     laterUpdateBtn.disabled = false;
@@ -659,7 +1386,47 @@ async function skipUpdate() {
     await window.harnessAPI.updateSkip(pendingUpdate.remote);
   } catch { /* скрытие — желание, а не обязанность */ }
   hideUpdateDialog();
-  setUpdateStatus('', 'Скрыто. Напомню, когда выйдет следующее обновление.');
+  setUpdateStatus('', t('upd.skipped.done'));
+}
+
+// --- Откат: возврат на версию до обновления --------------------------------
+// Доступна всегда, когда запомнена прошлая версия (переживает перезапуски):
+// её пишет каждое успешное обновление, сам откат — тоже (дорога назад
+// остаётся мощёной в обе стороны).
+function refreshRollback(result) {
+  const prev = result && typeof result.previous === 'string' ? result.previous : '';
+  const local = result && typeof result.local === 'string' ? result.local : '';
+  const can = /^[0-9a-f]{40}$/.test(prev) && prev !== local;
+  rollbackUpdateBtn.disabled = !can;
+  if (can) {
+    rollbackStatus.hidden = false;
+    rollbackStatus.textContent = t('upd.rb.target', { short: prev.slice(0, 7) });
+  } else {
+    rollbackStatus.hidden = true;
+  }
+}
+
+async function rollbackUpdate() {
+  if (!window.harnessAPI || typeof window.harnessAPI.updateRollback !== 'function') {
+    setUpdateStatus('error', t('upd.shell.old.rb'));
+    return;
+  }
+  rollbackUpdateBtn.disabled = true;
+  setUpdateStatus('scanning', t('upd.rollbacking'));
+  try {
+    const result = await window.harnessAPI.updateRollback();
+    setUpdateStatus('ready', t('upd.rb.done', { short: String(result.head || '').slice(0, 7) }));
+    speakA11y(t('upd.rb.done.speak'));
+    refreshRollback({ previous: result.previous, local: result.head });
+  } catch (error) {
+    setUpdateStatus('error', readableError(error));
+    speakA11y(t('upd.rb.fail'));
+  } finally {
+    // Состояние кнопки — из свежего опроса, без побочных диалогов.
+    try {
+      refreshRollback(await window.harnessAPI.updateCheck());
+    } catch { rollbackUpdateBtn.disabled = false; }
+  }
 }
 
 /**
@@ -710,14 +1477,12 @@ function updateCoreInstallButton(binaryAvailable, busy = null) {
   // label says which of the two jobs each one does, because "установлен" alone
   // reads as something that is on — and that would be the switch's job.
   installProxyCoreBtn.disabled = !missing;
-  installProxyCoreBtn.textContent = missing ? 'Установить V2Ray (движок)' : 'Движок V2Ray установлен';
-  installProxyCoreBtn.title = missing
-    ? 'Скачать и подготовить v2ray.exe для этого приложения'
-    : 'Движок туннеля уже найден — установка не нужна';
+  installProxyCoreBtn.textContent = missing ? t('vpn.install') : t('vpn.installed');
+  installProxyCoreBtn.title = missing ? t('vpn.install.t.missing') : t('vpn.install.t.present');
 
   removeProxyCoreBtn.disabled = known !== true;
-  removeProxyCoreBtn.textContent = 'Удалить V2Ray';
-  removeProxyCoreBtn.title = 'Убрать v2ray.exe и файлы данных с компьютера';
+  removeProxyCoreBtn.textContent = t('vpn.remove');
+  removeProxyCoreBtn.title = t('vpn.remove.t');
 }
 
 async function warnIfCoreMissing() {
@@ -725,7 +1490,7 @@ async function warnIfCoreMissing() {
     // refreshCoreAvailability renders the buttons and the launch warning together.
     await refreshCoreAvailability();
     if (v2rayCoreAvailable === false) {
-      setStatus(proxyStatus, '', 'Движок V2Ray не установлен. Нажмите «Установить V2Ray (движок)» — приложение скачает его само.');
+      setStatus(proxyStatus, '', t('vpn.noengine'));
     }
   } catch { /* the tunnel simply stays untested */ }
 }
@@ -791,7 +1556,7 @@ function renderServers() {
   if (servers.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'server-empty';
-    empty.textContent = 'Список пуст — вставьте ссылку или загрузите подписку';
+    empty.textContent = t('vpn.empty');
     proxyServers.append(empty);
     return;
   }
@@ -819,7 +1584,7 @@ function renderServers() {
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'server-remove';
-    remove.title = 'Удалить сервер';
+    remove.title = t('vpn.server.remove.t');
     remove.textContent = '×';
     remove.addEventListener('click', event => { event.preventDefault(); void removeServer(server.id); });
 
@@ -853,41 +1618,41 @@ async function refreshProxySettings() {
     updateCoreInstallButton(status?.binaryAvailable);
     // A saved "on" with no engine is the state that blocks a launch, so name it now.
     if (document.enabled && status?.binaryAvailable === false) {
-      setStatus(proxyStatus, 'error', 'Движок V2Ray не установлен — нажмите «Установить V2Ray (движок)». Или выключите туннель переключателем, чтобы запустить приложение без него.');
+      setStatus(proxyStatus, 'error', t('vpn.noengine.plan'));
     }
   } catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
 }
 
 async function addLink() {
   const text = proxyLinkInput.value.trim();
-  if (text === '') { setStatus(proxyStatus, 'error', 'Вставьте ссылку на сервер'); return; }
+  if (text === '') { setStatus(proxyStatus, 'error', t('vpn.paste.empty')); return; }
   try {
     const result = await window.harnessAPI.v2rayImportLink(text);
     applySettings(result.settings);
     proxyLinkInput.value = '';
-    setStatus(proxyStatus, 'ready', `Добавлено серверов: ${result.servers.length}`);
+    setStatus(proxyStatus, 'ready', t('vpn.added', { n: result.servers.length }));
   } catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
 }
 
 async function loadSubscription() {
   const url = proxySubUrl.value.trim();
-  if (url === '') { setStatus(proxyStatus, 'error', 'Вставьте ссылку на список серверов'); return; }
+  if (url === '') { setStatus(proxyStatus, 'error', t('vpn.sub.empty')); return; }
   byId('loadSubBtn').disabled = true;
-  setStatus(proxyStatus, 'scanning', 'Загружаю список серверов…');
+  setStatus(proxyStatus, 'scanning', t('vpn.sub.loading'));
   try {
     const result = await window.harnessAPI.v2rayImportSubscription(url);
     applySettings(result.settings);
-    setStatus(proxyStatus, 'ready', `Загружено серверов: ${result.servers.length}`);
+    setStatus(proxyStatus, 'ready', t('vpn.sub.loaded', { n: result.servers.length }));
   } catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
   finally { byId('loadSubBtn').disabled = false; }
 }
 
 async function installCoreFromLauncher() {
   updateCoreInstallButton(undefined, 'install');
-  setStatus(proxyStatus, 'scanning', 'Ставлю V2Ray… 0%');
+  setStatus(proxyStatus, 'scanning', t('vpn.setup'));
   setInstallProgress(0, true);
 
-  const formatMb = (bytes) => `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+  const formatMb = (bytes) => `${(bytes / (1024 * 1024)).toFixed(1)} ${t('unit.mb')}`;
   let lastBytesText = '';
   const unsubscribe = typeof window.harnessAPI.onV2RayInstallProgress === 'function'
     ? window.harnessAPI.onV2RayInstallProgress((payload) => {
@@ -895,7 +1660,7 @@ async function installCoreFromLauncher() {
       const safePercent = Number.isFinite(percent) ? Math.max(0, Math.min(100, Math.floor(percent))) : null;
       const message = typeof payload?.message === 'string' && payload.message.trim() !== ''
         ? payload.message.trim()
-        : 'Установка V2Ray…';
+        : t('vpn.setup.def');
       const loadedBytes = Number(payload?.loadedBytes);
       const totalBytes = Number(payload?.totalBytes);
       const hasLoaded = Number.isFinite(loadedBytes) && loadedBytes > 0;
@@ -918,8 +1683,8 @@ async function installCoreFromLauncher() {
     if (result && result.ok === true && result.status?.binaryAvailable !== false) {
       const bytesSuffix = lastBytesText === '' ? '' : lastBytesText;
       setInstallProgress(100, true);
-      setStatus(proxyStatus, 'ready', `V2Ray установлен. Можно подключать туннель. (100%)${bytesSuffix}`);
-      speakA11y('Движок туннеля установлен. Можно подключать.');
+      setStatus(proxyStatus, 'ready', t('vpn.installed.full', { bytes: bytesSuffix }));
+      speakA11y(t('vpn.installed.speak'));
       // Re-reads the settings document and the engine's presence together, so
       // the buttons are repainted from the shell's answer rather than from the
       // install's own report.
@@ -928,13 +1693,13 @@ async function installCoreFromLauncher() {
     }
     const reason = result && typeof result.message === 'string' && result.message.trim() !== ''
       ? result.message.trim()
-      : 'Не удалось установить V2Ray. Проверьте подключение к сети и повторите.';
+      : t('vpn.install.fail.def');
     setStatus(proxyStatus, 'error', readableError(reason));
-    speakA11y(`Не удалось установить движок туннеля. ${reason}`);
+    speakA11y(t('vpn.install.fail.speak.r', { reason }));
     setInstallProgress(0, false);
   } catch (error) {
     setStatus(proxyStatus, 'error', readableError(error));
-    speakA11y('Не удалось установить движок туннеля.');
+    speakA11y(t('vpn.install.fail.speak'));
     updateCoreInstallButton(false);
     setInstallProgress(0, false);
   } finally {
@@ -950,7 +1715,7 @@ async function removeCoreFromLauncher() {
   // Removing the engine kills any tunnel using it, so the tunnel state is
   // reset afterwards rather than left claiming to be connected.
   updateCoreInstallButton(undefined, 'remove');
-  setStatus(proxyStatus, 'scanning', 'Удаляю V2Ray…');
+  setStatus(proxyStatus, 'scanning', t('vpn.removing'));
   setInstallProgress(0, false);
 
   // The result is checked first and the panel is painted once, at the end. The
@@ -962,12 +1727,12 @@ async function removeCoreFromLauncher() {
     const result = await window.harnessAPI.v2rayRemoveCore();
     if (result?.status?.binaryAvailable === false) {
       if (result.ok === true) {
-        setStatus(proxyStatus, 'ready', 'V2Ray удалён. Движок больше не занимает место; установить его заново можно этой же кнопкой.');
-        speakA11y('Движок туннеля удалён.');
+        setStatus(proxyStatus, 'ready', t('vpn.removed.full'));
+        speakA11y(t('vpn.removed.speak'));
       } else {
         failureReason = typeof result.message === 'string' && result.message.trim() !== ''
           ? result.message.trim()
-          : 'Не удалось удалить V2Ray. Закройте приложение и повторите.';
+          : t('vpn.remove.fail.def');
       }
       // The engine's presence comes from the answer that just arrived. Passing
       // the remembered value instead repainted the buttons from a fact that
@@ -977,7 +1742,7 @@ async function removeCoreFromLauncher() {
     } else {
       // No answer about the file is the one outcome to be suspicious of: the
       // command may have reported success while the engine is still there.
-      failureReason = 'Не удалось удалить V2Ray. Закройте приложение и повторите.';
+      failureReason = t('vpn.remove.fail.def');
       await refreshCoreAvailability();
     }
   } catch (error) {
@@ -988,21 +1753,21 @@ async function removeCoreFromLauncher() {
   }
   if (failureReason !== '') {
     setStatus(proxyStatus, 'error', failureReason);
-    speakA11y(`Не удалось удалить движок туннеля. ${failureReason}`);
+    speakA11y(t('vpn.remove.fail.speak.r', { reason: failureReason }));
   }
 }
 
 async function selectServer(id) {
   try {
     applySettings(await window.harnessAPI.v2raySelect(id));
-    if (proxyRunning) setStatus(proxyStatus, 'scanning', 'Сервер изменён — нажмите «Подключить и проверить»');
+    if (proxyRunning) setStatus(proxyStatus, 'scanning', t('vpn.changed'));
   } catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
 }
 
 async function removeServer(id) {
   try {
     applySettings(await window.harnessAPI.v2rayRemove(id));
-    setStatus(proxyStatus, '', 'Сервер удалён');
+    setStatus(proxyStatus, '', t('vpn.server.removed'));
   } catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
 }
 async function loadBrandIcon() {
@@ -1013,14 +1778,14 @@ async function loadBrandIcon() {
   }
 }
 async function connectAndTestProxy() {
-  testProxyBtn.disabled = true; setStatus(proxyStatus, 'scanning', 'Запуск V2Ray…');
+  testProxyBtn.disabled = true; setStatus(proxyStatus, 'scanning', t('vpn.starting'));
   try {
     const started = await window.harnessAPI.v2rayStart(proxySettings());
     proxyRunning = Boolean(started.running); stopProxyBtn.disabled = !proxyRunning;
-    setStatus(proxyStatus, 'scanning', `Прокси открыт на 127.0.0.1:${started.httpPort}. Проверка туннеля…`);
+    setStatus(proxyStatus, 'scanning', t('vpn.opened', { port: started.httpPort }));
     const result = await window.harnessAPI.v2rayTest();
-    setStatus(proxyStatus, 'ready', `Прокси работает: ${result.target}, ${result.latencyMs} мс`);
-    speakA11y('Туннель подключён и проверен.');
+    setStatus(proxyStatus, 'ready', t('vpn.working', { target: result.target, ms: result.latencyMs }));
+    speakA11y(t('vpn.tunnel.ok'));
     clearTunnelFailure();
     return true;
   } catch (error) {
@@ -1030,19 +1795,20 @@ async function connectAndTestProxy() {
     // The proxy section is below the fold in this panel, so a tunnel that failed
     // to start while the switch is off has to be echoed next to the launch
     // button — the user's next move is there, not in the proxy section.
-    reportTunnelFailure(`прокси не запустился. ${message}`);
+    reportTunnelFailure(t('vpn.tunnel.fail', { msg: message }));
     return false;
   } finally { testProxyBtn.disabled = false; refreshCoreAvailability(); }
 }
 async function disconnectProxy() {
   testProxyBtn.disabled = true; stopProxyBtn.disabled = true;
-  try { await window.harnessAPI.v2rayStop(); proxyRunning = false; setStatus(proxyStatus, '', 'V2Ray отключён'); }
+  try { await window.harnessAPI.v2rayStop(); proxyRunning = false; setStatus(proxyStatus, '', t('vpn.off')); }
   catch (error) { setStatus(proxyStatus, 'error', readableError(error)); }
   finally { testProxyBtn.disabled = false; refreshCoreAvailability(); }
 }
 proxyEnabled.addEventListener('change', () => {
   proxyFields.hidden = !proxyEnabled.checked;
   void window.harnessAPI.v2raySave({ enabled: proxyEnabled.checked }).catch(() => {});
+  speakA11y(t(proxyEnabled.checked ? 'proxy.on' : 'proxy.off'));
   if (proxyEnabled.checked) void warnIfCoreMissing();
   if (!proxyEnabled.checked && proxyRunning) void disconnectProxy();
   refreshProxyPlan();
@@ -1060,16 +1826,78 @@ byId('loadSubBtn').addEventListener('click', () => void loadSubscription());
 // page is already selected here — the two faces edit one file.
 void refreshProxySettings();
 
-// Доступная версия: галочка, чтение сохранённого выбора (без озвучки при входе).
+// Доступная версия: галочка, суб-галочки, чтение сохранённого выбора.
 a11yToggle.addEventListener('change', () => {
   const on = a11yToggle.checked;
   applyLauncherA11y(on);
-  void saveLauncherA11y(on);
+  void saveLauncherA11y();
+});
+a11ySpeakPress.addEventListener('change', () => {
+  speakPress = a11ySpeakPress.checked === true;
+  speakA11y(t(speakPress ? 'a11y.press.on' : 'a11y.press.off'));
+  void saveLauncherA11y();
+});
+a11ySpeakHover.addEventListener('change', () => {
+  speakHover = a11ySpeakHover.checked === true;
+  speakA11y(t(speakHover ? 'a11y.hover.on' : 'a11y.hover.off'));
+  void saveLauncherA11y();
 });
 void loadLauncherA11y();
 
+// Озвучка наведения (кнопки и переключатели) и нажатий (блоки целиком,
+// поля полностью) — только при включённой доступной версии.
+document.addEventListener('mouseover', (event) => {
+  if (!a11yEnabled || !speakHover) { scheduleHoverReset(); return; }
+  const target = event.target && event.target.closest ? event.target : null;
+  if (!target) return;
+  const btn = target.closest('button');
+  const toggle = !btn ? target.closest('label.switch') : null;
+  const field = !btn && !toggle ? target.closest('input, textarea, select') : null;
+  const el = btn || toggle || field;
+  if (!el) { scheduleHoverReset(); return; }
+  clearTimeout(hoverClearTimer);
+  const text = field ? pressTextForField(el) : hoverTextFor(el);
+  if (text === '') { lastHoverKey = null; return; }
+  const key = `${el.tagName}|${el.id || ''}|${text}`;
+  // Совпадение — молчим, но перезаводим забывание: иначе цепочка быстрых
+  // возвратов отменяет его навсегда и повтор не прозвучит никогда.
+  if (key === lastHoverKey) { scheduleHoverReset(); return; }
+  lastHoverKey = key;
+  speakA11y(text);
+});
+document.addEventListener('focusin', (event) => {
+  if (!a11yEnabled || !speakPress) return;
+  const el = event.target;
+  if (!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+  const text = pressTextForField(el);
+  if (text !== '') speakA11y(text, false, true);
+});
+document.addEventListener('click', (event) => {
+  if (!a11yEnabled || !speakPress) return;
+  const target = event.target && event.target.closest ? event.target : null;
+  if (!target) return;
+  // У кнопок, полей, подписей и ссылок свой голос — блок за них не говорит.
+  // (Клик по подписи сам включает контрол: у него тоже есть голос.)
+  if (target.closest('button, input, textarea, select, a, summary, label')) return;
+  const block = target.closest('.section');
+  if (!block) return;
+  const text = block.textContent.replace(/\s+/g, ' ').trim();
+  if (text !== '') speakA11y(text, false, true);
+});
+
+// Язык: переключатель, начальная отрисовка сохранённого.
+langRu.addEventListener('click', () => setLanguage('ru'));
+langEn.addEventListener('click', () => setLanguage('en'));
+langZh.addEventListener('click', () => setLanguage('zh'));
+applyStaticLanguage();
+paintLangSwitcher();
+paintPortStatus();
+
 // Обновления: кнопка проверки и три исхода диалога.
-checkUpdatesBtn.addEventListener('click', () => void checkUpdates());
+// Обновления: кнопка проверки (громко). Тихая автопроверка — из onReady,
+// когда канал уже доверенный.
+checkUpdatesBtn.addEventListener('click', () => void checkUpdates(false));
+rollbackUpdateBtn.addEventListener('click', () => void rollbackUpdate());
 applyUpdateBtn.addEventListener('click', () => void applyUpdate());
 laterUpdateBtn.addEventListener('click', () => { hideUpdateDialog(); });
 skipUpdateBtn.addEventListener('click', () => void skipUpdate());
@@ -1082,8 +1910,14 @@ window.addEventListener('focus', () => { void refreshProxySettings(); });
 window.harnessAPI.onReady((port, fullscreen) => {
   currentPort = port; portInput.value = port; portInput.disabled = false; launchBtn.disabled = false;
   fullscreenToggle.disabled = false; fullscreenToggle.checked = Boolean(fullscreen); document.body.classList.toggle('fullscreen', Boolean(fullscreen));
-  setStatus(portStatus, 'ready', `Порт ${port} свободен`); void loadBrandIcon();
-  speakA11y(`Порт ${port} свободен. Можно запускать.`);
+  portState = { kind: 'ready', port };
+  paintPortStatus(); void loadBrandIcon();
+  speakA11y(t('port.ready.speak', { port }));
+  // Тихая автопроверка обновлений — отсюда, а не в момент разбора страницы:
+  // так рано оболочка ещё не признаёт адрес окна своим и режет вызов.
+  if (!autoUpdateChecked) { autoUpdateChecked = true; void checkUpdates(true); }
+  // Подгон окна под содержимое чуть позже, когда уляжется вёрстка.
+  setTimeout(fitWindowToContent, 400);
 });
 window.harnessAPI.onFullscreenChanged(enabled => { fullscreenToggle.checked = Boolean(enabled); document.body.classList.toggle('fullscreen', Boolean(enabled)); });
 window.harnessAPI.onMaximizeChanged(maximized => { byId('btnMax').innerHTML = maximized ? '&#10063;' : '&#9723;'; });
@@ -1096,8 +1930,8 @@ window.harnessAPI.onMaximizeChanged(maximized => { byId('btnMax').innerHTML = ma
  * already associates with "the launch did not work".
  */
 function showLaunchFailure(text) {
-  errorText.textContent = `Ошибка: ${text}`;
-  speakA11y(`Не удалось запустить. ${text}`);
+  errorText.textContent = `${t('error.prefix')} ${text}`;
+  speakA11y(t('launch.fail.speak', { text }));
   errorBox.classList.remove('hidden');
   launchOverlay.classList.add('hidden');
   launchBtn.disabled = false;
@@ -1116,16 +1950,16 @@ function showLaunchFailure(text) {
  */
 function refreshProxyPlan() {
   if (proxyEnabled.checked && v2rayCoreAvailable === false) {
-    reportTunnelFailure('прокси включён, но движок удалён — установите его или выключите туннель');
+    reportTunnelFailure(t('vpn.plan'));
     return;
   }
   clearTunnelFailure();
 }
 
 function reportTunnelFailure(text) {
-  errorText.textContent = `Ошибка: ${text}`;
+  errorText.textContent = `${t('error.prefix')} ${text}`;
   errorBox.classList.remove('hidden');
-  speakA11y(`Туннель: ${text}`);
+  speakA11y(t('vpn.tunnel.speak', { text }));
 }
 
 function clearTunnelFailure() {
@@ -1133,22 +1967,27 @@ function clearTunnelFailure() {
   errorBox.classList.add('hidden');
 }
 
-window.harnessAPI.onLaunchProgress(data => { const labels = { spawning: 'Запуск сервера…', waiting: 'Ожидание готовности…', loading: 'Загрузка интерфейса…' }; overlayText.textContent = labels[data?.stage] || 'Запуск…'; speakA11y(labels[data?.stage] || 'Запуск'); });
+window.harnessAPI.onLaunchProgress(data => { const labels = { spawning: t('launch.st.spawning'), waiting: t('launch.st.waiting'), loading: t('launch.st.loading') }; overlayText.textContent = labels[data?.stage] || t('launch.st.fallback'); speakA11y(labels[data?.stage] || t('launch.st.fallback')); });
 window.harnessAPI.onLaunchError(message => showLaunchFailure(String(message)));
 byId('btnMin').addEventListener('click', () => window.harnessAPI.minimize());
 byId('btnMax').addEventListener('click', () => window.harnessAPI.maximize());
 byId('btnClose').addEventListener('click', () => window.harnessAPI.close());
 byId('titlebar').addEventListener('dblclick', event => { if (!event.target.closest('.titlebar-btn')) window.harnessAPI.maximize(); });
-fullscreenToggle.addEventListener('change', () => window.harnessAPI.toggleFullscreen(fullscreenToggle.checked));
+fullscreenToggle.addEventListener('change', () => {
+  window.harnessAPI.toggleFullscreen(fullscreenToggle.checked);
+  speakA11y(t(fullscreenToggle.checked ? 'fs.on' : 'fs.off'));
+});
 
 portInput.addEventListener('input', () => {
   const port = Number(portInput.value); currentPort = Number.isInteger(port) ? port : null; clearTimeout(portCheckTimer);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) { launchBtn.disabled = true; setStatus(portStatus, 'error', 'Введите порт от 1 до 65535'); return; }
-  launchBtn.disabled = true; setStatus(portStatus, 'scanning', `Проверка порта ${port}…`); const sequence = ++portCheckSequence;
+  if (!Number.isInteger(port) || port < 1 || port > 65535) { launchBtn.disabled = true; portState = { kind: 'error', port: null, invalid: true }; paintPortStatus(); return; }
+  launchBtn.disabled = true; portState = { kind: 'scanning', port }; paintPortStatus(); const sequence = ++portCheckSequence;
   portCheckTimer = setTimeout(async () => {
     const result = await window.harnessAPI.checkPort(port).catch(() => ({ ok: false, reason: 'unavailable' }));
     if (sequence !== portCheckSequence || Number(portInput.value) !== port) return;
-    launchBtn.disabled = !result.ok; setStatus(portStatus, result.ok ? 'ready' : 'error', result.ok ? `Порт ${port} свободен` : `Порт ${port} ${result.reason === 'busy' ? 'занят' : 'недоступен'}`);
+    launchBtn.disabled = !result.ok;
+    portState = result.ok ? { kind: 'ready', port } : { kind: 'error', port, reason: result.reason };
+    paintPortStatus();
   }, 350);
 });
 
@@ -1156,18 +1995,18 @@ async function launch() {
   const port = Number(portInput.value); if (!Number.isInteger(port) || port < 1 || port > 65535) return; currentPort = port;
   launchBtn.disabled = true; portInput.disabled = true; fullscreenToggle.disabled = true; proxyEnabled.disabled = true; clearTunnelFailure(); launchOverlay.classList.remove('hidden');
   if (proxyEnabled.checked && !proxyRunning) {
-    overlayText.textContent = 'Подключение V2Ray…';
+    overlayText.textContent = t('launch.vpn');
     if (!await connectAndTestProxy()) {
       // The launch stops on purpose: the tunnel is on, so going ahead would send
       // traffic outside it while the user believes it is protected. The shell's
       // reason says why it failed but not how to get moving again — add that.
-      const hint = 'Чтобы запустить приложение без туннеля, выключите его переключателем выше.';
+      const hint = t('vpn.launch.hint');
       setStatus(proxyStatus, 'error', `${proxyStatus.textContent} ${hint}`);
       reportTunnelFailure(`${proxyStatus.textContent} ${hint}`);
       launchOverlay.classList.add('hidden'); launchBtn.disabled = false; portInput.disabled = false; fullscreenToggle.disabled = false; proxyEnabled.disabled = false; return;
     }
   }
-  overlayText.textContent = 'Запуск сервера…'; window.harnessAPI.startHarness(port);
+  overlayText.textContent = t('launch.st.spawning'); window.harnessAPI.startHarness(port);
 }
 launchBtn.addEventListener('click', () => void launch());
 portInput.addEventListener('keydown', event => { if (event.key === 'Enter' && !launchBtn.disabled) void launch(); });
@@ -1181,10 +2020,9 @@ function showGpuNotice() {
   const reason = new URLSearchParams(location.search).get('gpu');
   if (!reason) return;
   const notice = byId('gpuNotice');
-  notice.textContent = reason === 'crash'
-    ? 'GPU недоступен: приложение перезапустилось в режиме программного рендеринга. Анимации могут быть менее плавными.'
-    : 'Включён программный рендеринг (DSH_SOFTWARE_RENDERING). Анимации могут быть менее плавными.';
+  notice.textContent = t(reason === 'crash' ? 'gpu.crash' : 'gpu.soft');
   notice.classList.remove('hidden');
+  speakA11y(notice.textContent);
 }
 showGpuNotice();
 </script>

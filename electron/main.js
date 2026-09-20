@@ -846,15 +846,23 @@ function readLauncherA11y() {
     const raw = readFileSync(launcherA11yPath(), 'utf8');
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('bad document');
-    return { enabled: parsed.enabled === true };
+    return {
+      enabled: parsed.enabled === true,
+      speakPress: parsed.speakPress === true,
+      speakHover: parsed.speakHover === true,
+    };
   } catch {
-    return { enabled: false };
+    return { enabled: false, speakPress: false, speakHover: false };
   }
 }
 
 function writeLauncherA11y(patch) {
   if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Bad launcher accessibility patch');
-  const next = { enabled: patch.enabled === true };
+  const next = {
+    enabled: patch.enabled === true,
+    speakPress: patch.speakPress === true,
+    speakHover: patch.speakHover === true,
+  };
   try {
     require('node:fs').mkdirSync(path.dirname(launcherA11yPath()), { recursive: true });
   } catch {
@@ -890,14 +898,22 @@ function readUpdateState() {
     const raw = readFileSync(updateStatePath(), 'utf8');
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('bad document');
-    return { skippedCommit: typeof parsed.skippedCommit === 'string' ? parsed.skippedCommit : '' };
+    return {
+      skippedCommit: typeof parsed.skippedCommit === 'string' ? parsed.skippedCommit : '',
+      previousCommit: typeof parsed.previousCommit === 'string' ? parsed.previousCommit : '',
+    };
   } catch {
-    return { skippedCommit: '' };
+    return { skippedCommit: '', previousCommit: '' };
   }
 }
 
 function writeUpdateState(patch) {
-  const next = { ...readUpdateState(), skippedCommit: String((patch && patch.skippedCommit) || '') };
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Bad update state patch');
+  const current = readUpdateState();
+  const next = {
+    skippedCommit: typeof patch.skippedCommit === 'string' ? patch.skippedCommit : current.skippedCommit,
+    previousCommit: typeof patch.previousCommit === 'string' ? patch.previousCommit : current.previousCommit,
+  };
   try {
     require('node:fs').mkdirSync(path.dirname(updateStatePath()), { recursive: true });
   } catch {
@@ -913,9 +929,20 @@ function gitAsync(args, timeoutMs = 30000) {
       .then(({ stdout }) => resolve({ ok: true, out: String(stdout || '') }))
       .catch((err) => {
         const detail = err && (err.stderr || err.stdout || err.message);
-        resolve({ ok: false, error: String(detail || err).split('\n')[0] });
+        resolve({ ok: false, error: String(detail || err).split('\n')[0], timeout: Boolean(err && err.killed) });
       });
   });
+}
+
+/**
+ * Whether a git failure looks like a dead/slow network rather than a repo
+ * problem: timeouts and DNS/connect errors get a human message instead of
+ * the raw command line.
+ */
+function isNetworkGitError(result) {
+  if (result && result.timeout) return true;
+  return /timeout|timed out|connect|resolve|handshake|TLS|SSL|proxy|empty reply|reset by peer|econn|enet|eai_|ehost|epipe|enotfound/i
+    .test(String((result && result.error) || ''));
 }
 
 function parseUpdateLog(out) {
@@ -932,14 +959,24 @@ function parseUpdateLog(out) {
 
 secureHandle('update-check', async () => {
   const remote = await gitAsync(['ls-remote', 'origin', 'refs/heads/master']);
-  if (!remote.ok) throw new Error(`Не удалось спросить GitHub: ${remote.error}`);
+  if (!remote.ok) {
+    throw new Error(isNetworkGitError(remote)
+      ? 'Не удалось спросить GitHub: нет сети. Попробуйте ещё раз.'
+      : `Не удалось спросить GitHub: ${remote.error}`);
+  }
   const remoteHash = remote.out.trim().split(/\s+/)[0] || '';
   if (!/^[0-9a-f]{40}$/.test(remoteHash)) throw new Error('GitHub ответил непонятно.');
   const local = await gitAsync(['rev-parse', 'HEAD']);
   const localHash = local.ok ? local.out.trim() : '';
-  if (remoteHash === localHash) return { upToDate: true, local: localHash, remote: remoteHash };
+  const stated = readUpdateState().previousCommit;
+  const previous = /^[0-9a-f]{40}$/.test(stated) ? stated : '';
+  if (remoteHash === localHash) return { upToDate: true, local: localHash, remote: remoteHash, previous };
   const fetched = await gitAsync(['fetch', 'origin', 'master'], 60000);
-  if (!fetched.ok) throw new Error(`Не удалось скачать описание: ${fetched.error}`);
+  if (!fetched.ok) {
+    throw new Error(isNetworkGitError(fetched)
+      ? 'Не удалось скачать список изменений: сеть оборвалась. Попробуйте ещё раз.'
+      : `Не удалось скачать описание: ${fetched.error}`);
+  }
   const log = await gitAsync(['log', `${localHash}..FETCH_HEAD`, '--format=%H|%ad|%s', '--date=short', '--max-count=30']);
   const commits = log.ok ? parseUpdateLog(log.out) : [];
   return {
@@ -948,6 +985,7 @@ secureHandle('update-check', async () => {
     remote: remoteHash,
     commits,
     skipped: readUpdateState().skippedCommit === remoteHash,
+    previous,
   };
 });
 
@@ -959,8 +997,14 @@ secureHandle('update-apply', async () => {
   if (status.out.trim() !== '') {
     throw new Error('В папке есть несохранённые изменения — обновление отказался, чтобы их не потерять.');
   }
+  const before = await gitAsync(['rev-parse', 'HEAD']);
+  const beforeHash = before.ok ? before.out.trim() : '';
   const pulled = await gitAsync(['pull', '--ff-only', 'origin', 'master'], 120000);
-  if (!pulled.ok) throw new Error(`Не удалось подтянуть: ${pulled.error}`);
+  if (!pulled.ok) {
+    throw new Error(isNetworkGitError(pulled)
+      ? 'Не удалось подтянуть: сеть оборвалась. Попробуйте ещё раз.'
+      : `Не удалось подтянуть: ${pulled.error}`);
+  }
   // The sources moved but the built files did not: drop the backend entry so
   // the launcher rebuilds through its normal build branch on the next run.
   try {
@@ -969,7 +1013,38 @@ secureHandle('update-apply', async () => {
     // Already unbuilt (fresh clone): the build branch handles it.
   }
   const head = await gitAsync(['rev-parse', 'HEAD']);
-  return { ok: true, head: head.ok ? head.out.trim() : '' };
+  const headHash = head.ok ? head.out.trim() : '';
+  // Remember where we came from, so rollback stays available after restarts.
+  // A no-op pull keeps the older memory instead of pointing at itself.
+  if (/^[0-9a-f]{40}$/.test(beforeHash) && beforeHash !== headHash) {
+    writeUpdateState({ previousCommit: beforeHash });
+  }
+  return { ok: true, head: headHash };
+});
+
+secureHandle('update-rollback', async () => {
+  const target = readUpdateState().previousCommit;
+  if (!/^[0-9a-f]{40}$/.test(target)) {
+    throw new Error('Нечего откатывать: версия до обновления не запомнена.');
+  }
+  const head = await gitAsync(['rev-parse', 'HEAD']);
+  const headHash = head.ok ? head.out.trim() : '';
+  if (headHash === target) throw new Error('Вы уже на этой версии.');
+  const status = await gitAsync(['status', '--porcelain', '--untracked-files=no']);
+  if (!status.ok) throw new Error(`Не удалось проверить папку: ${status.error}`);
+  if (status.out.trim() !== '') {
+    throw new Error('В папке есть несохранённые изменения — откат отказался, чтобы их не потерять.');
+  }
+  const reset = await gitAsync(['reset', '--hard', target], 60000);
+  if (!reset.ok) throw new Error(`Не удалось откатить: ${reset.error}`);
+  try {
+    require('node:fs').unlinkSync(path.join(REPO_ROOT, 'apps', 'cli', 'lib', 'bin.js'));
+  } catch {
+    // Already unbuilt: the build branch handles it.
+  }
+  // Swap the memory so the road back stays paved too.
+  if (/^[0-9a-f]{40}$/.test(headHash)) writeUpdateState({ previousCommit: headHash });
+  return { ok: true, head: target, previous: headHash };
 });
 
 // A pasted block may hold one link or a whole list, so the text is split first and
@@ -1103,6 +1178,30 @@ secureOn('screen-broadcast', (_event, active) => {
     return;
   }
   releaseBroadcastBlocker();
+});
+
+// Fit the window to the selector content once at startup, so the whole
+// panel (now taller than the old default) shows without scrolling —
+// including the backend-loading phase. Clamped to the work area, never
+// touching a maximized/fullscreen window or a size the user chose later.
+secureOn('fit-window', (event, contentHeight) => {
+  const sender = event.sender;
+  setImmediate(() => {
+    const win = BrowserWindow.fromWebContents(sender);
+    if (!win || win.isDestroyed() || win.isMaximized() || win.isFullScreen()) return;
+    const content = Math.max(200, Math.min(Number(contentHeight) || 0, 9000));
+    if (!content) return;
+    try {
+      const wa = screen.getPrimaryDisplay().workArea;
+      const bounds = win.getBounds();
+      const targetH = Math.min(content, wa.height);
+      const y = Math.max(wa.y, Math.min(bounds.y, wa.y + wa.height - targetH));
+      win.setBounds({ x: bounds.x, y, width: bounds.width, height: targetH });
+      saveWindowState(win);
+    } catch (err) {
+      console.error('Fit window failed:', err);
+    }
+  });
 });
 
 // Custom titlebar window controls (frameless window)
