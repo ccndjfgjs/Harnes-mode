@@ -24,7 +24,7 @@ test('sensitive IPC registrations use the centralized sender guard', () => {
     'check-port', 'v2ray-status', 'v2ray-start', 'v2ray-stop', 'v2ray-test',
     'v2ray-install-core', 'v2ray-remove-core', 'v2ray-settings', 'v2ray-save', 'v2ray-import-link',
     'v2ray-import-subscription', 'v2ray-select', 'v2ray-remove', 'is-maximized',
-    'is-fullscreen', 'get-app-icon',
+    'is-fullscreen', 'get-app-icon', 'a11y-settings', 'a11y-save',
   ];
   for (const channel of handleChannels) {
     assert.match(mainSource, new RegExp(`secureHandle\\('${channel}'`), channel);

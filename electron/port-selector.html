@@ -214,6 +214,63 @@ textarea.input { resize: vertical; font-family: inherit; line-height: 1.5; }
 }
 .error-box { margin-top: var(--l-space-3); padding: var(--l-space-3); border: 1px solid rgba(240,109,114,.5); border-radius: var(--l-radius-md); color: #ffacb0; background: rgba(240,109,114,.08); animation: notice-in var(--l-motion-slow) var(--l-ease-emphasized) both; }
 .hidden { display: none !important; }
+/* Доступная версия: чёрно-жёлтая тема стартового окна. Включается атрибутом
+   data-launcher-a11y='yellow' на корне — тем же именем значения, что у
+   контрастной темы меню «Специальные возможности» внутри Харнеса. */
+:root[data-launcher-a11y='yellow'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #000000;
+  --surface-2: #0a0a0a;
+  --surface-3: #141400;
+  --border: #ffff00;
+  --text: #ffff00;
+  --muted: #ffee55;
+  --brand: #ffff00;
+  --brand-hover: #ffee55;
+  --success: #ffff00;
+  --danger: #ff6666;
+  --warning: #ffff00;
+  --shadow: none;
+}
+:root[data-launcher-a11y='yellow'] body { background: #000000; color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .dialog,
+:root[data-launcher-a11y='yellow'] .section { background: #000000; border-color: #ffff00; }
+:root[data-launcher-a11y='yellow'] #titlebar { background: #000000; border-bottom: 1px solid #ffff00; }
+:root[data-launcher-a11y='yellow'] .titlebar-left { color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .titlebar-placeholder,
+:root[data-launcher-a11y='yellow'] .brand-placeholder { background: #ffff00; }
+:root[data-launcher-a11y='yellow'] .titlebar-btn { color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .titlebar-btn:hover { background: rgba(255,255,0,.15); color: #ffff00; }
+:root[data-launcher-a11y='yellow'] #btnClose:hover { background: #ffff00; color: #000000; }
+:root[data-launcher-a11y='yellow'] .subtitle,
+:root[data-launcher-a11y='yellow'] .section-description,
+:root[data-launcher-a11y='yellow'] .status { color: #ffee55; }
+:root[data-launcher-a11y='yellow'] .status.ready { color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .status.error { color: #ff6666; }
+:root[data-launcher-a11y='yellow'] .section-title strong,
+:root[data-launcher-a11y='yellow'] .field label,
+:root[data-launcher-a11y='yellow'] .server-list-label,
+:root[data-launcher-a11y='yellow'] h1 { color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .input { background: #000000; color: #ffff00; border-color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .btn { background: #000000; color: #ffff00; border-color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .btn:hover:not(:disabled) { background: rgba(255,255,0,.12); border-color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .launch { background: #ffff00; color: #000000; box-shadow: none; }
+:root[data-launcher-a11y='yellow'] .launch:hover:not(:disabled) { background: #ffee55; box-shadow: none; }
+:root[data-launcher-a11y='yellow'] .launch:disabled { opacity: .6; }
+:root[data-launcher-a11y='yellow'] .switch span { background: #1a1a00; border: 1px solid #ffff00; }
+:root[data-launcher-a11y='yellow'] .switch input:checked + span { background: #ffff00; }
+:root[data-launcher-a11y='yellow'] .switch input:checked + span::after { background: #000000; }
+:root[data-launcher-a11y='yellow'] .server-item { background: #000000; border-color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .server-item.active { border-color: #ffff00; background: rgba(255,255,0,.12); }
+:root[data-launcher-a11y='yellow'] .server-name { color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .server-meta { color: #ffee55; }
+:root[data-launcher-a11y='yellow'] .error-box { color: #ff8888; border-color: #ff6666; background: #000000; }
+:root[data-launcher-a11y='yellow'] .overlay { background: rgba(0,0,0,.96); color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .spinner { border-color: rgba(255,255,0,.2); border-top-color: #ffff00; }
+:root[data-launcher-a11y='yellow'] .progress-track { background: rgba(255,255,0,.15); }
+:root[data-launcher-a11y='yellow'] .progress-fill { background: #ffff00; }
+:root[data-launcher-a11y='yellow'] #gpuNotice { background: #000000; border-color: #ffff00; color: #ffff00; }
 .overlay { position: absolute; inset: 0; z-index: 15; border-radius: var(--l-radius-xl); background: rgba(16,19,28,.94); display: grid; place-content: center; justify-items: center; gap: var(--l-space-3); }
 .spinner { width: 31px; height: 31px; border: 3px solid rgba(255,255,255,.14); border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -263,6 +320,13 @@ textarea.input { resize: vertical; font-family: inherit; line-height: 1.5; }
         </div>
       </div>
       <div id="portStatus" class="status scanning">Поиск свободного порта…</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <div><strong>Доступная версия</strong><p class="section-description">Чёрно-жёлтая тема и голосовые подсказки — та же настройка, что в меню «Специальные возможности»</p></div>
+        <label class="switch"><input id="a11yToggle" type="checkbox"><span></span></label>
+      </div>
     </div>
 
     <div class="section">
@@ -335,6 +399,7 @@ const portStatus = byId('portStatus');
 const launchBtn = byId('launchBtn');
 const fullscreenToggle = byId('fullscreenToggle');
 const proxyEnabled = byId('proxyEnabled');
+const a11yToggle = byId('a11yToggle');
 const proxyFields = byId('proxyFields');
 const proxyStatus = byId('proxyStatus');
 const proxyInstallProgress = byId('proxyInstallProgress');
@@ -405,6 +470,59 @@ function readableError(error) {
     : String(error);
   const wrapper = /^(?:[A-Za-z]*Error:\s*)?(?:Error invoking remote method '[^']*':\s*)?(?:[A-Za-z]*Error:\s*)?/;
   return raw.replace(wrapper, '').trim() || raw;
+}
+
+// --- Доступная версия: чёрно-жёлтая тема + русская озвучка ------------------
+// Галочка — ярлык на те же два поля меню «Специальные возможности»
+// (контраст 'yellow' + voiceNav). Отдельной настройки нет: выбор хранится
+// в оболочке, а в основное окно переезжает через applyLauncherA11y в preload.
+let a11yEnabled = false;
+let lastSpokenText = '';
+let lastSpokenAt = 0;
+
+function speakA11y(text, force) {
+  // force — для самой фразы переключения: сторож уже выключен, а сказать надо.
+  if (!a11yEnabled && !force) return;
+  try {
+    const message = String(text || '').trim().slice(0, 250);
+    if (message === '' || typeof speechSynthesis === 'undefined') return;
+    // Повтор той же фразы подряд не озвучиваем — статусы обновляются часто.
+    const now = Date.now();
+    if (message === lastSpokenText && now - lastSpokenAt < 5000) return;
+    lastSpokenText = message; lastSpokenAt = now;
+    const utter = new SpeechSynthesisUtterance(message);
+    utter.lang = 'ru-RU'; utter.rate = 1; utter.pitch = 1; utter.volume = 1;
+    try { speechSynthesis.cancel(); } catch {}
+    speechSynthesis.speak(utter);
+  } catch { /* голос — украшение, молчим при любой ошибке */ }
+}
+
+function applyLauncherA11y(enabled, opts) {
+  a11yEnabled = enabled === true;
+  try {
+    document.documentElement.setAttribute('data-launcher-a11y', a11yEnabled ? 'yellow' : 'none');
+  } catch {}
+  if (a11yToggle && a11yToggle.checked !== a11yEnabled) a11yToggle.checked = a11yEnabled;
+  if (!opts || opts.announce !== false) {
+    speakA11y(a11yEnabled
+      ? 'Доступная версия включена. Чёрно-жёлтая тема и озвучка.'
+      : 'Доступная версия выключена.', true);
+  }
+}
+
+async function loadLauncherA11y() {
+  try {
+    if (!window.harnessAPI || typeof window.harnessAPI.a11ySettings !== 'function') return;
+    const doc = await window.harnessAPI.a11ySettings();
+    applyLauncherA11y(doc && doc.enabled === true, { announce: false });
+  } catch { applyLauncherA11y(false, { announce: false }); }
+}
+
+async function saveLauncherA11y(enabled) {
+  try {
+    if (!window.harnessAPI || typeof window.harnessAPI.a11ySave !== 'function') return;
+    await window.harnessAPI.a11ySave({ enabled: enabled === true });
+  } catch { /* выбор уже применён на экране */ }
 }
 
 /**
@@ -664,6 +782,7 @@ async function installCoreFromLauncher() {
       const bytesSuffix = lastBytesText === '' ? '' : lastBytesText;
       setInstallProgress(100, true);
       setStatus(proxyStatus, 'ready', `V2Ray установлен. Можно подключать туннель. (100%)${bytesSuffix}`);
+      speakA11y('Движок туннеля установлен. Можно подключать.');
       // Re-reads the settings document and the engine's presence together, so
       // the buttons are repainted from the shell's answer rather than from the
       // install's own report.
@@ -674,9 +793,11 @@ async function installCoreFromLauncher() {
       ? result.message.trim()
       : 'Не удалось установить V2Ray. Проверьте подключение к сети и повторите.';
     setStatus(proxyStatus, 'error', readableError(reason));
+    speakA11y(`Не удалось установить движок туннеля. ${reason}`);
     setInstallProgress(0, false);
   } catch (error) {
     setStatus(proxyStatus, 'error', readableError(error));
+    speakA11y('Не удалось установить движок туннеля.');
     updateCoreInstallButton(false);
     setInstallProgress(0, false);
   } finally {
@@ -705,6 +826,7 @@ async function removeCoreFromLauncher() {
     if (result?.status?.binaryAvailable === false) {
       if (result.ok === true) {
         setStatus(proxyStatus, 'ready', 'V2Ray удалён. Движок больше не занимает место; установить его заново можно этой же кнопкой.');
+        speakA11y('Движок туннеля удалён.');
       } else {
         failureReason = typeof result.message === 'string' && result.message.trim() !== ''
           ? result.message.trim()
@@ -727,7 +849,10 @@ async function removeCoreFromLauncher() {
     // re-read rather than assumed.
     await refreshCoreAvailability();
   }
-  if (failureReason !== '') setStatus(proxyStatus, 'error', failureReason);
+  if (failureReason !== '') {
+    setStatus(proxyStatus, 'error', failureReason);
+    speakA11y(`Не удалось удалить движок туннеля. ${failureReason}`);
+  }
 }
 
 async function selectServer(id) {
@@ -758,6 +883,7 @@ async function connectAndTestProxy() {
     setStatus(proxyStatus, 'scanning', `Прокси открыт на 127.0.0.1:${started.httpPort}. Проверка туннеля…`);
     const result = await window.harnessAPI.v2rayTest();
     setStatus(proxyStatus, 'ready', `Прокси работает: ${result.target}, ${result.latencyMs} мс`);
+    speakA11y('Туннель подключён и проверен.');
     clearTunnelFailure();
     return true;
   } catch (error) {
@@ -794,8 +920,16 @@ byId('addLinkBtn').addEventListener('click', () => void addLink());
 byId('loadSubBtn').addEventListener('click', () => void loadSubscription());
 
 // The panel opens on the saved document, so a server added from the in-app settings
-// page is already selected here — the two surfaces edit one file.
+// page is already selected here — the two faces edit one file.
 void refreshProxySettings();
+
+// Доступная версия: галочка, чтение сохранённого выбора (без озвучки при входе).
+a11yToggle.addEventListener('change', () => {
+  const on = a11yToggle.checked;
+  applyLauncherA11y(on);
+  void saveLauncherA11y(on);
+});
+void loadLauncherA11y();
 
 // The in-app settings page edits that same file, so a link or a list added while
 // this window was closed would never be drawn here. Refreshing on focus makes the
@@ -806,6 +940,7 @@ window.harnessAPI.onReady((port, fullscreen) => {
   currentPort = port; portInput.value = port; portInput.disabled = false; launchBtn.disabled = false;
   fullscreenToggle.disabled = false; fullscreenToggle.checked = Boolean(fullscreen); document.body.classList.toggle('fullscreen', Boolean(fullscreen));
   setStatus(portStatus, 'ready', `Порт ${port} свободен`); void loadBrandIcon();
+  speakA11y(`Порт ${port} свободен. Можно запускать.`);
 });
 window.harnessAPI.onFullscreenChanged(enabled => { fullscreenToggle.checked = Boolean(enabled); document.body.classList.toggle('fullscreen', Boolean(enabled)); });
 window.harnessAPI.onMaximizeChanged(maximized => { byId('btnMax').innerHTML = maximized ? '&#10063;' : '&#9723;'; });
@@ -819,6 +954,7 @@ window.harnessAPI.onMaximizeChanged(maximized => { byId('btnMax').innerHTML = ma
  */
 function showLaunchFailure(text) {
   errorText.textContent = `Ошибка: ${text}`;
+  speakA11y(`Не удалось запустить. ${text}`);
   errorBox.classList.remove('hidden');
   launchOverlay.classList.add('hidden');
   launchBtn.disabled = false;
@@ -846,6 +982,7 @@ function refreshProxyPlan() {
 function reportTunnelFailure(text) {
   errorText.textContent = `Ошибка: ${text}`;
   errorBox.classList.remove('hidden');
+  speakA11y(`Туннель: ${text}`);
 }
 
 function clearTunnelFailure() {
@@ -853,7 +990,7 @@ function clearTunnelFailure() {
   errorBox.classList.add('hidden');
 }
 
-window.harnessAPI.onLaunchProgress(data => { const labels = { spawning: 'Запуск сервера…', waiting: 'Ожидание готовности…', loading: 'Загрузка интерфейса…' }; overlayText.textContent = labels[data?.stage] || 'Запуск…'; });
+window.harnessAPI.onLaunchProgress(data => { const labels = { spawning: 'Запуск сервера…', waiting: 'Ожидание готовности…', loading: 'Загрузка интерфейса…' }; overlayText.textContent = labels[data?.stage] || 'Запуск…'; speakA11y(labels[data?.stage] || 'Запуск'); });
 window.harnessAPI.onLaunchError(message => showLaunchFailure(String(message)));
 byId('btnMin').addEventListener('click', () => window.harnessAPI.minimize());
 byId('btnMax').addEventListener('click', () => window.harnessAPI.maximize());

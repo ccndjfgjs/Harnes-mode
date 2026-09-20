@@ -106,6 +106,12 @@ contextBridge.exposeInMainWorld('harnessAPI', {
   v2raySelect: (id) => ipcRenderer.invoke('v2ray-select', String(id || '')),
   v2rayRemove: (id) => ipcRenderer.invoke('v2ray-remove', String(id || '')),
 
+  // 2.8 Launcher accessibility: one checkbox (contrast + voice), stored in main.
+  // The Harness-side merge below writes the same localStorage document the
+  // Accessibility page edits, so the menu and the checkbox show one setting.
+  a11ySettings: () => ipcRenderer.invoke('a11y-settings'),
+  a11ySave: (patch) => ipcRenderer.invoke('a11y-save', patch && typeof patch === 'object' ? { enabled: patch.enabled === true } : {}),
+
   // 3. Backend launch
   startHarness: (port) => ipcRenderer.send('start-harness', port),
 
@@ -356,13 +362,84 @@ function swapSelectorDot() {
   dot.replaceWith(img);
 }
 
+// Launcher accessibility carried into the Harness UI.
+//
+// The selector checkbox stores only { enabled } in main. This runs in the
+// Harness origin (localhost), where the Accessibility page's own document
+// lives, and merges exactly its two fields — contrast 'yellow' and
+// voiceNav — so the menu and the checkbox edit one document. Disabling
+// restores what was there before enabling (kept in a stash of our own),
+// and never touches anything the user set elsewhere.
+const LAUNCHER_A11Y_DOC_KEY = 'dsh.accessibility.settings';
+const LAUNCHER_A11Y_STASH_KEY = 'dsh.launcher-a11y.prev';
+
+function launcherA11yValidContrast(value) {
+  return value === 'none' || value === 'bw' || value === 'yellow' || value === 'daltonism';
+}
+
+function launcherA11yReadJson(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch { return null; }
+}
+
+function launcherA11yProjectAttrs(doc) {
+  try {
+    const root = document.documentElement;
+    const font = doc.font === 'mono' ? 'mono' : 'atkinson';
+    const contrast = launcherA11yValidContrast(doc.contrast) ? doc.contrast : 'none';
+    root.setAttribute('data-dsh-a11y-font', font);
+    root.setAttribute('data-dsh-a11y-contrast', contrast);
+  } catch { /* never break page boot */ }
+}
+
+async function applyLauncherA11y() {
+  try {
+    // Harness UI only: localhost pages without the selector's own #titlebar.
+    const isHarnessUI = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if (!isHarnessUI || document.getElementById('titlebar')) return;
+    let enabled = false;
+    try {
+      const doc = await ipcRenderer.invoke('a11y-settings');
+      enabled = Boolean(doc && doc.enabled === true);
+    } catch { return; }
+    const current = launcherA11yReadJson(LAUNCHER_A11Y_DOC_KEY) || {};
+    if (enabled) {
+      if (!launcherA11yReadJson(LAUNCHER_A11Y_STASH_KEY)) {
+        try {
+          localStorage.setItem(LAUNCHER_A11Y_STASH_KEY, JSON.stringify({ contrast: current.contrast, voiceNav: current.voiceNav }));
+        } catch { /* stash is best-effort */ }
+      }
+      const next = { ...current, contrast: 'yellow', voiceNav: true };
+      try { localStorage.setItem(LAUNCHER_A11Y_DOC_KEY, JSON.stringify(next)); } catch { /* page keeps its draft */ }
+      launcherA11yProjectAttrs(next);
+      return;
+    }
+    const stash = launcherA11yReadJson(LAUNCHER_A11Y_STASH_KEY);
+    if (!stash) return;
+    const next = { ...current };
+    if (launcherA11yValidContrast(stash.contrast)) next.contrast = stash.contrast;
+    else delete next.contrast;
+    if (typeof stash.voiceNav === 'boolean') next.voiceNav = stash.voiceNav;
+    else delete next.voiceNav;
+    try { localStorage.setItem(LAUNCHER_A11Y_DOC_KEY, JSON.stringify(next)); } catch { /* page keeps its draft */ }
+    try { localStorage.removeItem(LAUNCHER_A11Y_STASH_KEY); } catch { /* stale stash is harmless */ }
+    launcherA11yProjectAttrs(next);
+  } catch { /* never break page boot */ }
+}
+
 // Run injection on DOM ready (no-op outside Harness UI by guards above)
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     injectHarnessTitlebar();
     applyAppIconToSelector();
+    void applyLauncherA11y();
   });
 } else {
   injectHarnessTitlebar();
   applyAppIconToSelector();
+  void applyLauncherA11y();
 }

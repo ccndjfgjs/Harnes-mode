@@ -825,6 +825,48 @@ secureHandle('v2ray-settings', () => requireV2RayClient().readSettings());
 
 secureHandle('v2ray-save', (_event, patch) => requireV2RayClient().writeSettings(patch || {}));
 
+// --- Launcher accessibility: one checkbox in the selector window -------------
+// The file stores only the checkbox ({ enabled }). The Harness-side document
+// (localStorage `dsh.accessibility.settings`, the same one the Accessibility
+// page edits) is merged by the preload running in the Harness origin, so the
+// menu and the checkbox always show one setting, never two.
+const LAUNCHER_A11Y_FILENAME = 'launcher-a11y.json';
+
+function launcherA11yPath() {
+  try {
+    return path.join(app.getPath('userData'), LAUNCHER_A11Y_FILENAME);
+  } catch {
+    return path.join(REPO_ROOT, 'electron', LAUNCHER_A11Y_FILENAME);
+  }
+}
+
+function readLauncherA11y() {
+  try {
+    const raw = readFileSync(launcherA11yPath(), 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('bad document');
+    return { enabled: parsed.enabled === true };
+  } catch {
+    return { enabled: false };
+  }
+}
+
+function writeLauncherA11y(patch) {
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Bad launcher accessibility patch');
+  const next = { enabled: patch.enabled === true };
+  try {
+    require('node:fs').mkdirSync(path.dirname(launcherA11yPath()), { recursive: true });
+  } catch {
+    // userData exists in practice; a missing dir fails loudly on write below.
+  }
+  writeFileSync(launcherA11yPath(), `${JSON.stringify(next, null, 2)}\n`, { mode: 0o600 });
+  return next;
+}
+
+secureHandle('a11y-settings', () => readLauncherA11y());
+
+secureHandle('a11y-save', (_event, patch) => writeLauncherA11y(patch || {}));
+
 // A pasted block may hold one link or a whole list, so the text is split first and
 // each line parsed: that is what makes "paste everything you copied" work.
 secureHandle('v2ray-import-link', (_event, text) => {
