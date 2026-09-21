@@ -214,18 +214,20 @@ function routeToOutput(element: HTMLAudioElement, deviceId: string): void {
 /**
  * Start playing one clip.
  *
- * The report is always wired, never conditional: the caller above always has a
- * watcher to forward to, and it is a no-op when nobody asked to watch. Wiring
+ * The report is always wired, never conditional: the caller above always has
+ * a watcher to forward to, and it is a no-op when nobody asked to watch. Wiring
  * it conditionally would only add a branch that can never be taken.
  * @param source - the clip URL.
+ * @param rate - playback rate; 1 keeps the clip as synthesized.
  * @param report - told when the clip starts, ends, or fails to play.
  * @returns the playing element, so the next utterance can stop it.
  * @throws {Error} when the runtime has no audio element.
  */
-function startPlayback(source: string, report: (event: SpeechLifecycle) => void): HTMLAudioElement {
+function startPlayback(source: string, rate: number, report: (event: SpeechLifecycle) => void): HTMLAudioElement {
   const AudioCtor = (globalThis as { Audio?: new (source?: string) => HTMLAudioElement }).Audio
   if (AudioCtor === undefined) throw new Error('audio playback is unavailable')
   const element = new AudioCtor(source)
+  element.playbackRate = rate
   // The chosen output is read per utterance, so changing it in the settings
   // applies to the next answer rather than after a reload.
   routeToOutput(element, readVoiceModuleSettings().outputDeviceId)
@@ -280,21 +282,26 @@ export function createSpeechEngine(): TtsBackend {
   }
 
   /** Play one synthesized clip, replacing whatever was playing. */
-  const play = (blob: Blob, report: (event: SpeechLifecycle) => void): void => {
+  const play = (blob: Blob, rate: number, report: (event: SpeechLifecycle) => void): void => {
     if (clipUrl !== undefined) releaseObjectUrl(clipUrl)
     clipUrl = createObjectUrl(blob)
-    clip = startPlayback(clipUrl, report)
+    clip = startPlayback(clipUrl, rate, report)
   }
 
   /** Speak through the host route, degrading to the built-in voice. */
   const speakRemotely = (plan: SpeechPlan, text: string, endpoint: VoiceEndpoint | undefined): void => {
     const current = new AbortController()
     controller = current
+    // The keyless Google path bakes no pacing into the clip (its endpoint
+    // takes text and lang only), so the stored speed is applied at playback.
+    // Adapter providers bake it in — applying it again here would double it.
+    const keyless = (plan.provider === 'google' || plan.provider === 'custom')
+      && (endpoint?.url ?? '') === ''
     void requestSpeech(plan, text, endpoint, current.signal)
       .then((blob) => {
         // A cancel while the clip was in flight settles the utterance here.
         if (current.signal.aborted) return
-        play(blob, (event) => { finish(event) })
+        play(blob, keyless ? plan.speed : 1, (event) => { finish(event) })
       })
       .catch(() => {
         // A cancel is not a failure; a real failure degrades to the built-in voice.

@@ -10,6 +10,7 @@ import { AccessibilitySection } from '../src/client/AccessibilitySection.tsx'
 import type { AccessibilitySectionProps } from '../src/client/AccessibilitySection.tsx'
 import { retractAccessibilitySettings } from '../src/client/apply-accessibility.ts'
 import { readAccessibilitySettings } from '@deepseek-ai/dsh-client-ui-primitives/src/accessibility-settings.ts'
+import { setTtsBackend, writeAccessibilitySettings } from '@deepseek-ai/dsh-client-ui-primitives'
 
 afterEach(() => {
   cleanup()
@@ -50,11 +51,33 @@ describe('AccessibilitySection', () => {
       fireEvent.click(view.getByRole('button', { name: zh['save'] }))
     })
     expect(readAccessibilitySettings()).toEqual({
-      codeReading: 'full', sound: true, font: 'mono', stripMarkdown: false, voiceNav: true, voiceNavHover: true, voiceNavArrow: false, voiceNavDelay: 150, voiceNavChatTrigger: 'both', contrast: 'daltonism',
+      codeReading: 'full', sound: true, font: 'mono', stripMarkdown: false, voiceNav: true, voiceNavHover: true, voiceNavArrow: false, voiceNavDelay: 150, voiceNavChatTrigger: 'both', contrast: 'daltonism', speechRate: 1,
     })
     expect(document.documentElement.getAttribute('data-dsh-a11y-font')).toBe('mono')
     expect(document.documentElement.getAttribute('data-dsh-a11y-contrast')).toBe('daltonism')
     expect(view.getByRole('status').textContent).toBe(zh['saved'])
+  })
+
+  it('persists the speech rate slider instantly and previews at the new rate', () => {
+    const calls: { text: string; options?: unknown }[] = []
+    setTtsBackend({
+      isAvailable: () => true,
+      speak: (text: string, options?: unknown) => { calls.push({ text, options }) },
+      cancel: () => {},
+    })
+    try {
+      writeAccessibilitySettings({ voiceNav: true })
+      const view = renderSection()
+      const voiceNav = within(view.getAllByLabelText(zh['voiceNav.title'])[0]!)
+      const slider = voiceNav.getByLabelText(zh['voiceNav.rate']) as HTMLInputElement
+      fireEvent.change(slider, { target: { value: '1.5' } })
+      expect(readAccessibilitySettings().speechRate).toBe(1.5)
+      fireEvent.mouseUp(slider)
+      expect(calls).toHaveLength(1)
+      expect(calls[0]?.options).toMatchObject({ rate: 1.5 })
+    } finally {
+      setTtsBackend(null)
+    }
   })
 
   it('toggles sound off and on, persisting each save', () => {

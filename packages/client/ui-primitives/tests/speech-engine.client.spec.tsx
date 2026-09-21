@@ -25,6 +25,7 @@ class FakeAudio {
   readonly src: string
   pauses = 0
   plays = 0
+  playbackRate = 1
   onplaying: (() => void) | null = null
   onended: (() => void) | null = null
   onerror: (() => void) | null = null
@@ -124,7 +125,7 @@ function storeVoice(patch: Record<string, string>): void {
 
 /** Let queued microtasks and the pending fetch chain settle. */
 async function flush(): Promise<void> {
-  await new Promise(resolve => { setTimeout(resolve, 0) })
+  await new Promise((resolve) => { setTimeout(resolve, 0) })
 }
 
 describe('chooseSpeechEngine', () => {
@@ -210,6 +211,29 @@ describe('createSpeechEngine', () => {
     await flush()
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
     expect(init.headers).toEqual({ 'content-type': 'application/json' })
+  })
+
+  it('plays the keyless clip at the stored speed', async () => {
+    stubObjectUrls()
+    vi.stubGlobal('Audio', FakeAudio)
+    FakeAudio.instances = []
+    stubBuiltInVoice([{ lang: 'en-US' }])
+    storeVoice({ ttsSpeed: 1.5 } as unknown as Record<string, string>)
+    vi.stubGlobal('fetch', () => Promise.resolve(clipResponse([1])))
+    createSpeechEngine().speak('Привет')
+    await flush()
+    expect(playingClip().playbackRate).toBe(1.5)
+  })
+
+  it('does not double the speed when the host bakes it in', async () => {
+    stubObjectUrls()
+    vi.stubGlobal('Audio', FakeAudio)
+    FakeAudio.instances = []
+    storeVoice({ ttsUrl: 'https://tts.example.com/say', ttsSpeed: 1.5 } as unknown as Record<string, string>)
+    vi.stubGlobal('fetch', () => Promise.resolve(clipResponse([1, 2, 3])))
+    createSpeechEngine().speak('Привет')
+    await flush()
+    expect(playingClip().playbackRate).toBe(1)
   })
 
   it('stays with the built-in voice when it can pronounce Russian', async () => {
@@ -342,7 +366,7 @@ describe('installSpeechEngine', () => {
 
 describe('watching an utterance through the engine', () => {
   /** Speak one phrase through the engine and collect the events it reports. */
-  function watched(): { seen: SpeechLifecycle[], engine: ReturnType<typeof createSpeechEngine> } {
+  function watched(): { seen: SpeechLifecycle[]; engine: ReturnType<typeof createSpeechEngine> } {
     const seen: SpeechLifecycle[] = []
     const engine = createSpeechEngine()
     engine.speak('Привет', { onLifecycle: (event) => { seen.push(event) } })

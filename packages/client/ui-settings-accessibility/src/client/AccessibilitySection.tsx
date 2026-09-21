@@ -7,7 +7,7 @@ import type { AccessibilitySettingsKey } from './locales.ts'
 import type {
   AccessibilityFont, AccessibilitySettings, CodeReadingMode, ContrastTheme,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { readAccessibilitySettings, speakNavText, writeAccessibilitySettings } from '@deepseek-ai/dsh-client-ui-primitives'
+import { readAccessibilitySettings, speakNavText, speakText, writeAccessibilitySettings } from '@deepseek-ai/dsh-client-ui-primitives'
 import { applyAccessibilitySettings } from './apply-accessibility.ts'
 import css from './AccessibilitySection.module.css'
 
@@ -165,6 +165,28 @@ export function AccessibilitySection({ t }: AccessibilitySectionProps) {
             />
           </label>
           <p className={css.description} style={{ marginTop: 4 }}>{t('voiceNav.delayDesc')}</p>
+        </div>
+        <div style={{ marginTop: 8, opacity: draft.voiceNav ? 1 : 0.5 }}>
+          <label className={css.option} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+            <span>{t('voiceNav.rateValue').replace('{value}', String(draft.speechRate))}</span>
+            <input
+              type="range"
+              min={0.5}
+              max={2}
+              step={0.1}
+              value={draft.speechRate}
+              disabled={!draft.voiceNav}
+              onChange={(event) => {
+                const value = Math.min(2, Math.max(0.5, Math.round(Number(event.target.value) * 10) / 10))
+                patch({ speechRate: value })
+                try { writeAccessibilitySettings({ speechRate: value }) } catch {}
+              }}
+              onMouseUp={() => { try { speakText(t('voiceNav.rateSpoken').replace('{value}', String(draft.speechRate)), { rate: draft.speechRate }) } catch {} }}
+              style={{ width: '100%' }}
+              aria-label={t('voiceNav.rate')}
+            />
+          </label>
+          <p className={css.description} style={{ marginTop: 4 }}>{t('voiceNav.rateDesc')}</p>
         </div>
         <div style={{ marginTop: 8, opacity: draft.voiceNav ? 1 : 0.5 }}>
           <span className={css.description}>{t('voiceNav.chatTrigger')}</span>

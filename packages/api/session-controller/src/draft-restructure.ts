@@ -175,7 +175,7 @@ export class DraftRestructure {
     try {
       for await (const chunk of this.ctx.llm.stream(options)) assembler.push(chunk)
     } catch (error) {
-      throw new RemoteError('gateway/internal', `draft restructuring failed: ${errorChain(error)}`, {})
+      throw new RemoteError('gateway/internal', `draft restructuring failed on "${route.provider}/${route.model}": ${errorChain(error)}`, {})
     }
     // A provider failure does not always throw: it can arrive as the terminal
     // finish chunk. Reading only the blocks would report "no text" and hide the
@@ -183,7 +183,7 @@ export class DraftRestructure {
     // fail-closed reading the summarizer and the title generator use.
     const finish = assembler.finish
     if (finish.kind === 'error' || finish.kind === 'aborted') {
-      throw new RemoteError('gateway/internal', `draft restructuring failed: ${finish.failure.message}`, {})
+      throw new RemoteError('gateway/internal', `draft restructuring failed on "${route.provider}/${route.model}": ${finish.failure.message}`, {})
     }
     if (finish.kind === 'max-tokens') {
       throw new RemoteError('gateway/internal', 'draft restructuring reached its token cap before producing text', {})

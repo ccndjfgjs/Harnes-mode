@@ -21,7 +21,7 @@ describe('readAccessibilitySettings', () => {
       codeReading: 'full', sound: false, font: 'mono', stripMarkdown: false, contrast: 'yellow', voiceNav: true, voiceNavHover: true, voiceNavArrow: true, voiceNavDelay: 300, voiceNavChatTrigger: 'click',
     }))
     expect(readAccessibilitySettings()).toEqual({
-      codeReading: 'full', sound: false, font: 'mono', stripMarkdown: false, contrast: 'yellow', voiceNav: true, voiceNavHover: true, voiceNavArrow: true, voiceNavDelay: 300, voiceNavChatTrigger: 'click',
+      codeReading: 'full', sound: false, font: 'mono', stripMarkdown: false, contrast: 'yellow', voiceNav: true, voiceNavHover: true, voiceNavArrow: true, voiceNavDelay: 300, voiceNavChatTrigger: 'click', speechRate: 1,
     })
   })
 
@@ -35,7 +35,7 @@ describe('readAccessibilitySettings', () => {
       codeReading: 'line', sound: 'yes', font: 'comic', contrast: 'bw',
     }))
     expect(readAccessibilitySettings()).toEqual({
-      ...DEFAULT_ACCESSIBILITY_SETTINGS, codeReading: 'line', contrast: 'bw', voiceNav: false,
+      ...DEFAULT_ACCESSIBILITY_SETTINGS, codeReading: 'line', contrast: 'bw', voiceNav: false, speechRate: 1,
     })
   })
 })
@@ -47,5 +47,22 @@ describe('writeAccessibilitySettings', () => {
     expect(readAccessibilitySettings()).toEqual({
       ...DEFAULT_ACCESSIBILITY_SETTINGS, contrast: 'daltonism', codeReading: 'full',
     })
+  })
+})
+
+describe('speechRate', () => {
+  it('defaults to normal speed', () => {
+    expect(readAccessibilitySettings().speechRate).toBe(1)
+  })
+
+  it('reads, clamps and rounds the stored rate', () => {
+    localStorage.setItem(ACCESSIBILITY_SETTINGS_STORAGE_KEY, JSON.stringify({ speechRate: 1.5 }))
+    expect(readAccessibilitySettings().speechRate).toBe(1.5)
+    localStorage.setItem(ACCESSIBILITY_SETTINGS_STORAGE_KEY, JSON.stringify({ speechRate: 9 }))
+    expect(readAccessibilitySettings().speechRate).toBe(2)
+    localStorage.setItem(ACCESSIBILITY_SETTINGS_STORAGE_KEY, JSON.stringify({ speechRate: 0 }))
+    expect(readAccessibilitySettings().speechRate).toBe(0.5)
+    localStorage.setItem(ACCESSIBILITY_SETTINGS_STORAGE_KEY, JSON.stringify({ speechRate: 'fast' }))
+    expect(readAccessibilitySettings().speechRate).toBe(1)
   })
 })

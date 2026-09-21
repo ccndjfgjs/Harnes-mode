@@ -69,7 +69,7 @@ describe('ModelSelect reasoning effort', () => {
     />)
 
     const trigger = screen.getByRole('button', {
-      name: '选择模型，当前 DeepSeek-V4-Flash，推理等级 High',
+      name: '选择模型，当前 DeepSeek-V4-Flash ★，推理等级 High',
     })
     fireEvent.click(trigger)
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
@@ -84,7 +84,7 @@ describe('ModelSelect reasoning effort', () => {
         model: 'deepseek-v4-flash',
         reasoningEffort: 'max',
       })
-      expect(trigger.getAttribute('aria-label')).toBe('选择模型，当前 DeepSeek-V4-Flash，推理等级 Max')
+      expect(trigger.getAttribute('aria-label')).toBe('选择模型，当前 DeepSeek-V4-Flash ★，推理等级 Max')
     })
   })
 
@@ -111,7 +111,7 @@ describe('ModelSelect reasoning effort', () => {
     />)
 
     fireEvent.click(screen.getByRole('button', {
-      name: '选择模型，当前 Model，推理等级 Default',
+      name: '选择模型，当前 Model ★，推理等级 Default',
     }))
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
     expect(screen.getAllByRole('menuitemradio').map(item => item.textContent))
@@ -132,13 +132,13 @@ describe('ModelSelect reasoning effort', () => {
       t={t}
     />)
 
-    const trigger = screen.getByRole('button', { name: '选择模型，当前 deepseek-official/removed-model' })
+    const trigger = screen.getByRole('button', { name: '选择模型，当前 deepseek-official/removed-model ★' })
     expect(trigger.textContent).toContain('deepseek-official/removed-model')
     fireEvent.click(trigger)
     expect(screen.queryByRole('menuitem', { name: /推理等级/ })).toBeNull()
     fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     expect(screen.queryByRole('menuitemradio', { name: 'removed-model' })).toBeNull()
-    expect(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Flash' })).toBeTruthy()
+    expect(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Flash ★' })).toBeTruthy()
     expect(screen.queryByText('Fast catalog description')).toBeNull()
   })
 
@@ -163,7 +163,7 @@ describe('ModelSelect reasoning effort', () => {
     directory.set(state())
     await waitFor(() => {
       expect(screen.getByRole('button', {
-        name: '选择模型，当前 DeepSeek-V4-Flash，推理等级 High',
+        name: '选择模型，当前 DeepSeek-V4-Flash ★，推理等级 High',
       })).toBeTruthy()
     })
   })
@@ -198,6 +198,49 @@ describe('ModelSelect reasoning effort', () => {
     expect(toast.textContent).toContain('模型操作失败：session/model-unavailable: session already contains images')
     // The selection failure does not render the in-menu load strip (no Retry).
     expect(screen.queryByRole('button', { name: '重试' })).toBeNull()
+  })
+
+  it('marks live models with a star and batch-only models with mail', () => {
+    const groups = [{
+      id: 'openrouter',
+      name: 'OpenRouter',
+      models: [
+        { id: 'poolside/laguna-s-2.1:free', name: 'Laguna-S-2.1' },
+        { id: 'google/gemini-3.6-flash:batch', name: 'Gemini-Batch' },
+      ],
+    }]
+    const directory = createSnapshotStore(state({
+      groups,
+      current: { provider: 'openrouter', model: 'poolside/laguna-s-2.1:free' },
+    }))
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: /选择模型|当前/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    expect(screen.getByRole('menuitemradio', { name: 'Laguna-S-2.1 ★' })).toBeTruthy()
+    expect(screen.getByRole('menuitemradio', { name: 'Gemini-Batch ✉' })).toBeTruthy()
+  })
+
+  it('shows the support badge in the trigger field', () => {
+    const directory = createSnapshotStore(state())
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    const trigger = screen.getByRole('button', { name: /选择模型|当前/ })
+    expect(trigger.textContent).toContain('DeepSeek-V4-Flash ★')
   })
 
   it('renders no Agent-bound control for an addressed subagent session', () => {

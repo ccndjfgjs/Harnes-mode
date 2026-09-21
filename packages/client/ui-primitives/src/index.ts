@@ -34,9 +34,12 @@ export type { TooltipSide } from './Tooltip.tsx'
 export { SettingsRadioOption, SettingsSaveBar } from './SettingsOptions.tsx'
 export { Toast } from './Toast.tsx'
 export { writeClipboard } from './clipboard.ts'
+export { isBatchOnlyModel, modelSupportBadge } from './batch-model.ts'
+export type { ModelSupportBadge } from './batch-model.ts'
+export { IMPROVE_ANNOUNCE_STORAGE_KEY, IMPROVE_READ_ALOUD_STORAGE_KEY, readImproveAnnounce, readImproveReadAloud, writeImproveAnnounce, writeImproveReadAloud } from './improve-announce.ts'
 export {
-  cancelSpeech, getTtsBackend, isSpeechSynthesisAvailable, pickRussianVoice, setTtsBackend, speak,
-  speakCode, speakText, speakWithBackend, webSpeechBackend,
+  cancelSpeech, getTtsBackend, isSpeechSynthesisAvailable, pickRussianVoice, resolveSpeechLang,
+  setTtsBackend, speak, speakCode, speakText, speakWithBackend, webSpeechBackend,
 } from './speech-synthesis.ts'
 export type { CodeSpeechMode, SpeakOptions, SpeechLifecycle, TtsBackend } from './speech-synthesis.ts'
 export { createRecognition, isSpeechRecognitionAvailable } from './speech-recognition.ts'
@@ -117,7 +120,7 @@ export {
 } from './speak-nav.ts'
 export {
   ACCESSIBILITY_SETTINGS_STORAGE_KEY, DEFAULT_ACCESSIBILITY_SETTINGS,
-  readAccessibilitySettings, writeAccessibilitySettings,
+  readAccessibilitySettings, readSpeechDelayMs, writeAccessibilitySettings,
 } from './accessibility-settings.ts'
 export type {
   AccessibilityFont, AccessibilitySettings, CodeReadingMode, ContrastTheme, VoiceNavChatTrigger,

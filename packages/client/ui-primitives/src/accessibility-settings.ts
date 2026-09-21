@@ -38,6 +38,8 @@ export interface AccessibilitySettings {
   voiceNavArrow: boolean
   /** Delay (ms) before the next utterance — throttles rapid hover/arrow speech. */
   voiceNavDelay: number
+  /** Speech rate multiplier shared by every voice: nav, announcements, read-aloud. */
+  speechRate: number
   /** How the empty chat placeholder is voiced: click, hover, or both. */
   voiceNavChatTrigger: VoiceNavChatTrigger
 }
@@ -56,6 +58,7 @@ export const DEFAULT_ACCESSIBILITY_SETTINGS: AccessibilitySettings = {
   voiceNavHover: true,
   voiceNavArrow: false,
   voiceNavDelay: 150,
+  speechRate: 1,
   voiceNavChatTrigger: 'both',
 }
 
@@ -121,6 +124,9 @@ export function readAccessibilitySettings(): AccessibilitySettings {
     voiceNavDelay: typeof record.voiceNavDelay === 'number' && Number.isFinite(record.voiceNavDelay)
       ? Math.min(1000, Math.max(0, Math.round(record.voiceNavDelay)))
       : DEFAULT_ACCESSIBILITY_SETTINGS.voiceNavDelay,
+    speechRate: typeof record.speechRate === 'number' && Number.isFinite(record.speechRate)
+      ? Math.min(2, Math.max(0.5, Math.round(record.speechRate * 10) / 10))
+      : DEFAULT_ACCESSIBILITY_SETTINGS.speechRate,
     voiceNavChatTrigger: isVoiceNavChatTrigger(record.voiceNavChatTrigger)
       ? record.voiceNavChatTrigger
       : DEFAULT_ACCESSIBILITY_SETTINGS.voiceNavChatTrigger,
@@ -137,5 +143,19 @@ export function writeAccessibilitySettings(patch: Partial<AccessibilitySettings>
     localStorage.setItem(ACCESSIBILITY_SETTINGS_STORAGE_KEY, JSON.stringify(next))
   } catch {
     // Private-mode/quota writes fail silently: the page keeps its draft.
+  }
+}
+
+/**
+ * The shared pause (ms) before the next utterance: the same slider the menu
+ * waits on, now also waited on by action announcements like the Improve-text
+ * button. One pause for every voice, read once per utterance.
+ * @returns clamped 0..1000 ms, 150 when the document cannot be read.
+ */
+export function readSpeechDelayMs(): number {
+  try {
+    return readAccessibilitySettings().voiceNavDelay
+  } catch {
+    return 150
   }
 }

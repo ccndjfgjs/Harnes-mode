@@ -79,7 +79,13 @@ describe('speak-nav', () => {
   it('speakNavText uses backend when voiceNav enabled', () => {
     writeAccessibilitySettings({ voiceNav: true })
     speakNavText('hello world')
-    expect(speakSpy).toHaveBeenCalledWith('hello world')
+    expect(speakSpy).toHaveBeenCalledWith('hello world', { rate: 1 })
+  })
+
+  it('speakNavText speaks at the stored rate', () => {
+    writeAccessibilitySettings({ voiceNav: true, speechRate: 1.5 })
+    speakNavText('hello rate')
+    expect(speakSpy).toHaveBeenCalledWith('hello rate', { rate: 1.5 })
   })
 
   it('speakNavElement delegates to speakNavText', () => {
@@ -87,7 +93,7 @@ describe('speak-nav', () => {
     const div = document.createElement('button')
     div.textContent = 'click me'
     speakNavElement(div)
-    expect(speakSpy).toHaveBeenCalledWith('click me')
+    expect(speakSpy).toHaveBeenCalledWith('click me', { rate: 1 })
   })
 
   it('createVoiceNavHandlers returns handlers that call speakNavElement', () => {
@@ -100,7 +106,7 @@ describe('speak-nav', () => {
     // Use a simple event object with target set
     const focusEvent = { target: btn } as unknown as FocusEvent
     onFocus(focusEvent)
-    expect(speakSpy).toHaveBeenCalledWith('tab')
+    expect(speakSpy).toHaveBeenCalledWith('tab', { rate: 1 })
     document.body.removeChild(btn)
   })
 
@@ -116,7 +122,7 @@ describe('speak-nav', () => {
     onClick({ target: btn } as unknown as MouseEvent)
     // Same label twice in a row: one utterance, no stutter.
     expect(speakSpy).toHaveBeenCalledTimes(1)
-    expect(speakSpy).toHaveBeenCalledWith('dedup-tab')
+    expect(speakSpy).toHaveBeenCalledWith('dedup-tab', { rate: 1 })
     document.body.removeChild(btn)
   })
 
@@ -137,7 +143,7 @@ describe('speak-nav', () => {
       btn.textContent = 'DeepSeek V4'
       document.body.appendChild(btn)
       btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      expect(speakSpy).toHaveBeenCalledWith('DeepSeek V4')
+      expect(speakSpy).toHaveBeenCalledWith('DeepSeek V4', { rate: 1 })
       document.body.removeChild(btn)
     } finally {
       uninstall()
@@ -153,7 +159,7 @@ describe('speak-nav', () => {
       btn.textContent = 'Models'
       document.body.appendChild(btn)
       btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
-      expect(speakSpy).toHaveBeenCalledWith('Models')
+      expect(speakSpy).toHaveBeenCalledWith('Models', { rate: 1 })
       document.body.removeChild(btn)
     } finally {
       uninstall()
@@ -221,7 +227,7 @@ describe('speak-nav', () => {
   it('speakNavText strips markdown before speaking', () => {
     writeAccessibilitySettings({ voiceNav: true, stripMarkdown: true })
     speakNavText('# Heading')
-    expect(speakSpy).toHaveBeenCalledWith('Heading')
+    expect(speakSpy).toHaveBeenCalledWith('Heading', { rate: 1 })
   })
 
   it('setTtsBackend allows custom backend', () => {
@@ -234,7 +240,7 @@ describe('speak-nav', () => {
     setTtsBackend(customBackend)
     writeAccessibilitySettings({ voiceNav: true })
     speakNavText('custom')
-    expect(customSpeak).toHaveBeenCalledWith('custom')
+    expect(customSpeak).toHaveBeenCalledWith('custom', { rate: 1 })
     setTtsBackend(null)
   })
 
@@ -277,7 +283,7 @@ describe('speak-nav', () => {
       btn.textContent = 'Hover item'
       document.body.appendChild(btn)
       btn.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-      expect(speakSpy).toHaveBeenCalledWith('Hover item')
+      expect(speakSpy).toHaveBeenCalledWith('Hover item', { rate: 1 })
       document.body.removeChild(btn)
     } finally {
       uninstall()

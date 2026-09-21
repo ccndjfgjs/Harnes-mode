@@ -3,8 +3,9 @@ import type { MouseEvent } from 'react'
 import clsx from 'clsx'
 import {
   IconCallOutline16, IconMicOutline16, IconScreenOutline16, IconSparkle16, Tooltip,
-  cancelSpeech, createSttEngine, createVoiceModule, readCallVoice,
-  readScreenSettings, readVoiceEndpoints, readVoiceModuleSettings, screenCapture,
+  cancelSpeech, createSttEngine, createVoiceModule, readAccessibilitySettings, readCallVoice,
+  readImproveAnnounce, readImproveReadAloud, readScreenSettings, readSpeechDelayMs,
+  readVoiceEndpoints, readVoiceModuleSettings, resolveSpeechLang, screenCapture, speakText,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {
   ScreenCaptureSnapshot, VoiceEndpoint, VoiceFailureReason, VoiceModule,
@@ -492,6 +493,27 @@ export function MediaToolbar({ inputActions, t, locked, busy, draft, addImages }
   // editor: both keep the control inert rather than opening a doomed call.
   const improveDisabled = frozen || improving || draft.trim() === ''
 
+  /** Read one sentence aloud when both voice gates allow it: the global
+   *  Accessibility voice and the Improve-text page toggle. Waits the shared
+   *  pause first, speaks in the program language through the configured voice
+   *  service, and stays silent when unmounted mid-wait. Silent otherwise.
+   *  @param text - already-localized sentence, never empty at call sites.
+   *  @param signal - caller lifetime; an aborted wait never speaks.
+   */
+  function announceImprove(text: string, signal: AbortSignal): void {
+    if (!readAccessibilitySettings().voiceNav || !readImproveAnnounce()) return
+    const lang = resolveSpeechLang(document.documentElement.lang)
+    const rate = readAccessibilitySettings().speechRate
+    window.setTimeout(() => {
+      if (signal.aborted) return
+      try {
+        speakText(text, { lang, rate })
+      } catch {
+        // Voice feedback must never break the composer flow.
+      }
+    }, readSpeechDelayMs())
+  }
+
   /** Hand the current draft to the model and write the answer back in place.
    *  The draft is replaced only on a real answer: a refusal, a cancel, or an
    *  empty result leaves the user's own text untouched, and nothing is sent. */
@@ -503,13 +525,21 @@ export function MediaToolbar({ inputActions, t, locked, busy, draft, addImages }
     setNotice('')
     try {
       const improved = await inputActions.restructureDraft(draft, controller.signal)
-      if (improved.trim() !== '') inputActions.setDraft(improved)
+      if (improved.trim() !== '') {
+        inputActions.setDraft(improved)
+        // Read-aloud replaces the short phrase: hearing both in a row stutters.
+        announceImprove(readImproveReadAloud() ? improved : t('compose.restructured'), controller.signal)
+      }
     } catch (error) {
       // Aborting is how unmount ends the call: not a failure to report. A real
       // failure keeps its reason: the voice controls below surface the message
       // the same way, and a bare "could not improve" leaves nothing to act on.
       if (!controller.signal.aborted) {
-        setNotice(`${t('compose.restructure.failed')}: ${error instanceof Error ? error.message : String(error)}`)
+        const notice = `${t('compose.restructure.failed')}: ${error instanceof Error ? error.message : String(error)}`
+        setNotice(notice)
+        // The screen keeps the reason; the voice reads only the short
+        // sentence — a gateway JSON dump is not something to hear aloud.
+        announceImprove(t('compose.restructure.failed'), controller.signal)
       }
     } finally {
       if (improveAbort.current === controller) improveAbort.current = undefined

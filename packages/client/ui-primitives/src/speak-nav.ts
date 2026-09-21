@@ -9,7 +9,7 @@
  * speaking through different engines.
  */
 
-import { readAccessibilitySettings, type VoiceNavChatTrigger } from './accessibility-settings.ts'
+import { readAccessibilitySettings, readSpeechDelayMs, type VoiceNavChatTrigger } from './accessibility-settings.ts'
 import { getTtsBackend } from './speech-synthesis.ts'
 import { stripMarkdownForSpeech } from './speech-text.ts'
 
@@ -83,12 +83,7 @@ let lastSpokenAt = 0
 
 /** Read the user-tuned delay (ms) between utterances; falls back to 150. */
 function getVoiceNavDelay(): number {
-  try {
-    const value = readAccessibilitySettings().voiceNavDelay
-    return typeof value === 'number' && Number.isFinite(value) ? Math.min(1000, Math.max(0, Math.round(value))) : 150
-  } catch {
-    return 150
-  }
+  return readSpeechDelayMs()
 }
 
 /**
@@ -115,7 +110,7 @@ export function speakNavText(rawText: string): void {
     lastSpokenText = toSpeak
     lastSpokenAt = now
     backend.cancel()
-    backend.speak(toSpeak)
+    backend.speak(toSpeak, { rate: readAccessibilitySettings().speechRate })
   } catch {
     // Best effort: speech must never break navigation.
   }
@@ -220,9 +215,12 @@ export function installVoiceNavArrowDelegation(root?: Document | Element): () =>
         return
       }
     }
-    const items = Array.from(group.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(el => el.offsetParent !== null || el.getClientRects().length > 0)
+    const items = Array.from(group.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+      .filter(el => el.offsetParent !== null || el.getClientRects().length > 0)
     // Fallback: also collect siblings in same flex row if group query was too broad.
-    const pool = items.length >= 2 ? items : Array.from((focusable.parentElement ?? group).querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+    const pool = items.length >= 2
+      ? items
+      : Array.from((focusable.parentElement ?? group).querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
     const idx = pool.indexOf(focusable)
     if (idx === -1 || pool.length < 2) return
     let nextIdx = idx
@@ -232,7 +230,8 @@ export function installVoiceNavArrowDelegation(root?: Document | Element): () =>
     else if (event.key === 'End') nextIdx = pool.length - 1
     if (nextIdx === idx) return
     event.preventDefault()
-    const next = pool[nextIdx]!
+    const next = pool[nextIdx]
+    if (next === undefined) return
     next.focus()
     // Visual highlight: data attribute for CSS hook.
     try {

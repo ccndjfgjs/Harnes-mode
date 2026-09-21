@@ -7,7 +7,9 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
-import { screenCapture } from '@deepseek-ai/dsh-client-ui-primitives'
+import {
+  screenCapture, setTtsBackend, writeAccessibilitySettings, writeImproveAnnounce, writeImproveReadAloud,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ConversationKey } from '../src/client/skeleton/../locales.ts'
 import { zh } from '../src/client/locales.ts'
 import type { InputActions } from '../src/client/contract/input.ts'
@@ -319,6 +321,151 @@ describe('draft improvement control', () => {
     expect(button.hasAttribute('disabled')).toBe(true)
     fireEvent.click(button)
     expect(restructureDraft).not.toHaveBeenCalled()
+  })
+})
+
+describe('improve voice announce', () => {
+  afterEach(() => {
+    setTtsBackend(null)
+    document.documentElement.lang = ''
+  })
+
+  function speakStub(): ReturnType<typeof vi.fn> {
+    const speak = vi.fn((_text: string, _options?: unknown) => {})
+    setTtsBackend({ isAvailable: () => true, speak, cancel: () => {} })
+    return speak
+  }
+
+  function enableVoice(): void {
+    writeAccessibilitySettings({ voiceNav: true })
+    writeImproveAnnounce(true)
+    document.documentElement.lang = 'en'
+  }
+
+  it('reads the improved draft aloud in the program language', async () => {
+    vi.useFakeTimers()
+    try {
+      const { inputActions, restructureDraft } = benchInputActions()
+      restructureDraft.mockResolvedValue('Готовый текст')
+      const speak = speakStub()
+      enableVoice()
+      const view = render(<MediaToolbar {...propsOf(inputActions, { draft: 'черновик' })} />)
+      await act(async () => {
+        fireEvent.click(view.getByRole('button', { name: zh['compose.restructure'] }))
+      })
+      await act(async () => { await vi.advanceTimersByTimeAsync(200) })
+      expect(speak).toHaveBeenCalledTimes(1)
+      expect(speak).toHaveBeenCalledWith(zh['compose.restructured'], { lang: 'en-US', rate: 1 })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reads failures aloud instead of staying silent', async () => {
+    vi.useFakeTimers()
+    try {
+      const { inputActions, restructureDraft } = benchInputActions()
+      restructureDraft.mockRejectedValue(new Error('model unreachable'))
+      const speak = speakStub()
+      enableVoice()
+      const view = render(<MediaToolbar {...propsOf(inputActions, { draft: 'черновик' })} />)
+      await act(async () => {
+        fireEvent.click(view.getByRole('button', { name: zh['compose.restructure'] }))
+      })
+      await act(async () => { await vi.advanceTimersByTimeAsync(200) })
+      expect(speak).toHaveBeenCalledTimes(1)
+      expect(speak).toHaveBeenCalledWith(
+        expect.stringContaining(zh['compose.restructure.failed']) as string,
+        { lang: 'en-US', rate: 1 },
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stays silent when the global voice is off', async () => {
+    const { inputActions, restructureDraft } = benchInputActions()
+    restructureDraft.mockResolvedValue('Готовый текст')
+    const speak = speakStub()
+    writeImproveAnnounce(true)
+    document.documentElement.lang = 'en'
+    const view = render(<MediaToolbar {...propsOf(inputActions, { draft: 'черновик' })} />)
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: zh['compose.restructure'] }))
+    })
+    expect(speak).not.toHaveBeenCalled()
+  })
+
+  it('stays silent when the page toggle is off', async () => {
+    const { inputActions, restructureDraft } = benchInputActions()
+    restructureDraft.mockResolvedValue('Готовый текст')
+    const speak = speakStub()
+    writeAccessibilitySettings({ voiceNav: true })
+    document.documentElement.lang = 'en'
+    const view = render(<MediaToolbar {...propsOf(inputActions, { draft: 'черновик' })} />)
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: zh['compose.restructure'] }))
+    })
+    expect(speak).not.toHaveBeenCalled()
+  })
+
+  it('reads the improved text itself when read-aloud is on', async () => {
+    vi.useFakeTimers()
+    try {
+      const { inputActions, restructureDraft } = benchInputActions()
+      restructureDraft.mockResolvedValue('Готовый текст')
+      const speak = speakStub()
+      writeAccessibilitySettings({ voiceNav: true })
+      writeImproveAnnounce(true)
+      writeImproveReadAloud(true)
+      document.documentElement.lang = 'en'
+      const view = render(<MediaToolbar {...propsOf(inputActions, { draft: 'черновик' })} />)
+      await act(async () => {
+        fireEvent.click(view.getByRole('button', { name: zh['compose.restructure'] }))
+      })
+      await act(async () => { await vi.advanceTimersByTimeAsync(200) })
+      expect(speak).toHaveBeenCalledTimes(1)
+      expect(speak).toHaveBeenCalledWith('Готовый текст', { lang: 'en-US', rate: 1 })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stays silent about the text when read-aloud is off', async () => {
+    const { inputActions, restructureDraft } = benchInputActions()
+    restructureDraft.mockResolvedValue('Готовый текст')
+    const speak = speakStub()
+    writeAccessibilitySettings({ voiceNav: true })
+    writeImproveAnnounce(false)
+    writeImproveReadAloud(false)
+    document.documentElement.lang = 'en'
+    const view = render(<MediaToolbar {...propsOf(inputActions, { draft: 'черновик' })} />)
+    await act(async () => {
+      fireEvent.click(view.getByRole('button', { name: zh['compose.restructure'] }))
+    })
+    expect(speak).not.toHaveBeenCalled()
+  })
+
+  it('waits the shared pause before speaking', async () => {
+    vi.useFakeTimers()
+    try {
+      const { inputActions, restructureDraft } = benchInputActions()
+      restructureDraft.mockResolvedValue('Готовый текст')
+      const speak = speakStub()
+      writeAccessibilitySettings({ voiceNav: true, voiceNavDelay: 500 })
+      writeImproveAnnounce(true)
+      document.documentElement.lang = 'en'
+      const view = render(<MediaToolbar {...propsOf(inputActions, { draft: 'черновик' })} />)
+      await act(async () => {
+        fireEvent.click(view.getByRole('button', { name: zh['compose.restructure'] }))
+      })
+      await act(async () => { await vi.advanceTimersByTimeAsync(499) })
+      expect(speak).not.toHaveBeenCalled()
+      await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+      expect(speak).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

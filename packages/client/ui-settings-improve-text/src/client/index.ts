@@ -1,10 +1,9 @@
 /**
- * Improve-text Settings plugin, browser half: the navigation section that
- * chooses which provider and model the composer "Improve text" button answers
- * on. The page writes the Host-owned `draft-restructure` namespace through
- * the bound settings scope, so the button picks the change up at its next
- * call with no reload; an unmade choice leaves the button on the Agent
- * default, exactly as it behaved before this page existed.
+ * Improve-text Settings plugin, browser half: the scanner card with the
+ * display-only model list, and the voice announce toggle. The page owns no
+ * model selection anymore: the button answers on the chat's own model, and
+ * this page only shows which routes would answer (badges) and whether the
+ * outcome is read aloud.
  *
  * The provider roster comes from the same Host catalog the Models section
  * reads, so a provider present on one page is present on the other.
@@ -25,7 +24,6 @@ import { ImproveTextSection } from './ImproveTextSection.tsx'
 import type { ImproveTextSectionInjected } from './ImproveTextSection.tsx'
 import { createRosterStore, loadRoster } from './roster.ts'
 import type { ImproveTextOperations } from './roster.ts'
-import { decodeImproveText, IMPROVE_TEXT_SETTINGS_NAMESPACE } from './improve-text-settings.ts'
 import { en, ru, zh, type ImproveTextKey } from './locales.ts'
 
 export { ImproveTextSection } from './ImproveTextSection.tsx'
@@ -55,29 +53,22 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 const NS = 'settings.improve-text'
 
 /**
- * Required services: the section slot, the locale registry, the settings
- * namespace scope, and the Remote namespaces the roster reads through.
+ * Required services: the section slot, the locale registry, and the Remote
+ * namespaces the roster reads through. The page writes nothing: the voice
+ * toggle lives in this browser's localStorage, so no settings scope is bound.
  */
 export const inject = [
-  'slots', 'locale', 'remote', 'remote.credentials', 'remote.session', 'settingsScope',
+  'slots', 'locale', 'remote', 'remote.credentials', 'remote.session',
 ]
 
 /**
- * Client plugin body: register dictionaries, bind the settings namespace and
- * the roster store, then register the section once its declarer is up.
+ * Client plugin body: register dictionaries and the roster store, then
+ * register the section once its declarer is up.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en, ru }), 'ui-settings-improve-text: dictionaries')
 
-  // Bound once here, where `settingsScope` and the Remote namespaces are
-  // declared in this plugin's own `inject`; the section receives callbacks and
-  // never a context. The scope's own memory mode is what keeps a remote
-  // browser process-local, so the page needs no loopback branch of its own.
-  const scope = ctx.settingsScope.bind({
-    namespace: IMPROVE_TEXT_SETTINGS_NAMESPACE,
-    decode: decodeImproveText,
-  })
   const operations: ImproveTextOperations = {
     modelCatalog: async () => {
       const response = await ctx.remote.session.modelCatalog()
@@ -107,7 +98,6 @@ export function apply(ctx: ClientContext): void {
       const instance = rosterStore.create()
       return {
         t,
-        scope,
         loadRoster: () => { void loadRoster(instance, operations) },
       }
     },

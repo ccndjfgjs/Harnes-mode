@@ -196,6 +196,15 @@ describe('draft restructuring', () => {
       .rejects.toMatchObject({ code: 'gateway/internal', message: expect.stringContaining('provider exploded') as string })
   })
 
+  it('names the failing route when the adapter call fails', async () => {
+    const { restructure } = bench({ fail: new Error('provider exploded') })
+    await expect(restructure.restructure({ text: 'черновик' }, signal()))
+      .rejects.toMatchObject({
+        code: 'gateway/internal',
+        message: expect.stringContaining('"fixture/fixture-model"') as string,
+      })
+  })
+
   it('reports an answer with no text at all', async () => {
     const { restructure } = bench({ chunks: [{ type: 'finish', reason: { kind: 'stop' } }] })
     await expect(restructure.restructure({ text: 'черновик' }, signal()))
@@ -215,6 +224,20 @@ describe('draft restructuring', () => {
       .rejects.toMatchObject({
         code: 'gateway/internal',
         message: expect.stringContaining('insufficient balance') as string,
+      })
+  })
+
+  it('names the failing route when the finish chunk carries the failure', async () => {
+    const { restructure } = bench({
+      chunks: [{
+        type: 'finish',
+        reason: { kind: 'error', failure: { message: 'batch only', code: 'NOT_FOUND' } },
+      }],
+    })
+    await expect(restructure.restructure({ text: 'черновик' }, signal()))
+      .rejects.toMatchObject({
+        code: 'gateway/internal',
+        message: expect.stringContaining('"fixture/fixture-model"') as string,
       })
   })
 

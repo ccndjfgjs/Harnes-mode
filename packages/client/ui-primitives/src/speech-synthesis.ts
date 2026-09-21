@@ -77,6 +77,21 @@ export interface TtsBackend {
 const DEFAULT_LANG = 'ru-RU'
 
 /**
+ * Map the program's document language to a speech tag: the locale layer syncs
+ * `document.documentElement.lang` ('ru', 'en', 'zh-CN'), and the utterance
+ * needs a full BCP 47 tag for the voice to match the words.
+ * @param docLang - document language id, any letter case.
+ * @returns the speech tag, Russian when the program language is unknown.
+ */
+export function resolveSpeechLang(docLang: string): string {
+  const id = docLang.toLowerCase()
+  if (id.startsWith('en')) return 'en-US'
+  if (id.startsWith('zh')) return 'zh-CN'
+  if (id.startsWith('ru')) return 'ru-RU'
+  return DEFAULT_LANG
+}
+
+/**
  * Whether the browser can speak at all.
  * @returns false outside browsers with the Web Speech API.
  */
